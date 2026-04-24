@@ -46,6 +46,18 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 
 ## Local Installation
 
+### Quick Install With npm
+
+If you use the `skills` CLI, you can install this repository directly from GitHub:
+
+```bash
+npx skills add SSaaaa3232/Nezikk-s-skills
+```
+
+Then copy or link the specific skill you want into your local skill directory if your runtime does not do that automatically.
+
+### Manual Install
+
 Typical local skill directories:
 
 - Claude: `~/.claude/skills/`
