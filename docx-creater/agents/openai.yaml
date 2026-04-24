@@ -1,0 +1,4 @@
+interface:
+  display_name: "DOCX Creater"
+  short_description: "Create and format DOCX documents on demand"
+  default_prompt: "Use $docx-creater when the user says /docx-create to create, finish, or format a DOCX document after first confirming the required formatting rules."
