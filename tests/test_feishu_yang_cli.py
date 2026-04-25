@@ -1,6 +1,7 @@
 import importlib.util
 import tempfile
 import unittest
+from urllib import request as urllib_request
 from pathlib import Path
 from unittest import mock
 
@@ -261,6 +262,182 @@ class FeishuYangCliHelperTests(unittest.TestCase):
                 "create_time": "1714000000002",
             },
         )
+
+
+class FeishuYangCliHttpTests(unittest.TestCase):
+    def test_request_json_sends_request_and_parses_response(self) -> None:
+        response = mock.MagicMock()
+        response.read.return_value = b'{"code":0,"data":{"ok":true}}'
+        context = mock.MagicMock()
+        context.__enter__.return_value = response
+
+        with mock.patch.object(MODULE.urllib.request, "urlopen", return_value=context) as mocked_open:
+            result = MODULE.request_json(
+                "https://example.test/open-apis/ping",
+                method="POST",
+                payload=b'{"hello":"world"}',
+                headers={"Content-Type": "application/json"},
+            )
+
+        self.assertEqual(result["code"], 0)
+        self.assertEqual(result["data"], {"ok": True})
+        sent_request = mocked_open.call_args[0][0]
+        self.assertIsInstance(sent_request, urllib_request.Request)
+        self.assertEqual(sent_request.get_method(), "POST")
+        self.assertEqual(sent_request.full_url, "https://example.test/open-apis/ping")
+        self.assertEqual(sent_request.data, b'{"hello":"world"}')
+
+    def test_send_json_serializes_payload_and_calls_request_json(self) -> None:
+        with mock.patch.object(MODULE, "request_json", return_value={"code": 0}) as mocked_request_json:
+            MODULE.send_json(
+                "https://example.test/open-apis/mock",
+                {"k": "v"},
+                {"Authorization": "Bearer token"},
+            )
+        kwargs = mocked_request_json.call_args.kwargs
+        self.assertEqual(kwargs["url"], "https://example.test/open-apis/mock")
+        self.assertEqual(kwargs["method"], "POST")
+        self.assertEqual(kwargs["payload"], b'{"k":"v"}')
+        self.assertEqual(kwargs["headers"]["Content-Type"], "application/json; charset=utf-8")
+        self.assertEqual(kwargs["headers"]["Authorization"], "Bearer token")
+
+    def test_fetch_tenant_access_token_posts_to_internal_endpoint(self) -> None:
+        with mock.patch.object(
+            MODULE,
+            "send_json",
+            return_value={"code": 0, "tenant_access_token": "t-123"},
+        ) as mocked_send_json:
+            token = MODULE.fetch_tenant_access_token("cli_id", "cli_secret")
+        self.assertEqual(token, "t-123")
+        args = mocked_send_json.call_args.args
+        self.assertEqual(
+            args[0],
+            "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal",
+        )
+        self.assertEqual(args[1], {"app_id": "cli_id", "app_secret": "cli_secret"})
+        self.assertEqual(args[2], {})
+
+    def test_build_multipart_form_builds_form_data_for_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            file_path = Path(tmp) / "report.txt"
+            file_path.write_bytes(b"hello")
+            content_type, body = MODULE.build_multipart_form("file", file_path)
+        self.assertIn("multipart/form-data; boundary=", content_type)
+        self.assertIn(b'Content-Disposition: form-data; name="file"; filename="report.txt"', body)
+        self.assertIn(b"hello", body)
+
+    def test_feishu_client_list_recent_files_filters_after_http_fetch(self) -> None:
+        with mock.patch.object(MODULE, "fetch_tenant_access_token", return_value="tenant-token"):
+            client = MODULE.FeishuClient("app_id", "app_secret")
+        with mock.patch.object(
+            MODULE,
+            "request_json",
+            return_value={
+                "code": 0,
+                "data": {
+                    "items": [
+                        {
+                            "message_id": "m-1",
+                            "message_type": "file",
+                            "create_time": "1714000000100",
+                            "sender": {
+                                "sender_name": "Yang",
+                                "sender_id": {"open_id": "ou_yang"},
+                            },
+                            "body": {"file_key": "fk-1", "file_name": "ok.pdf"},
+                        },
+                        {
+                            "message_id": "m-2",
+                            "message_type": "text",
+                            "create_time": "1714000000200",
+                            "sender": {
+                                "sender_name": "Yang",
+                                "sender_id": {"open_id": "ou_yang"},
+                            },
+                            "body": {},
+                        },
+                    ]
+                },
+            },
+        ) as mocked_request_json, mock.patch.object(MODULE.time, "time", return_value=1714000000.2):
+            items = client.list_recent_files(
+                chat_id="oc_test_chat",
+                sender_name="Yang",
+                sender_open_id="ou_yang",
+                hours=1,
+            )
+        self.assertEqual([item["message_id"] for item in items], ["m-1"])
+        request_kwargs = mocked_request_json.call_args.kwargs
+        self.assertEqual(request_kwargs["method"], "GET")
+        self.assertIn("chats/oc_test_chat/messages", request_kwargs["url"])
+        self.assertIn("page_size=50", request_kwargs["url"])
+        self.assertEqual(
+            request_kwargs["headers"]["Authorization"],
+            "Bearer tenant-token",
+        )
+
+    def test_feishu_client_download_file_writes_binary_to_path(self) -> None:
+        with mock.patch.object(MODULE, "fetch_tenant_access_token", return_value="tenant-token"):
+            client = MODULE.FeishuClient("app_id", "app_secret")
+        response = mock.MagicMock()
+        response.read.return_value = b"PDFDATA"
+        context = mock.MagicMock()
+        context.__enter__.return_value = response
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            MODULE.urllib.request, "urlopen", return_value=context
+        ):
+            output_path = Path(tmp) / "out.pdf"
+            client.download_file("file_key_1", output_path)
+            self.assertEqual(output_path.read_bytes(), b"PDFDATA")
+
+    def test_feishu_client_upload_file_posts_multipart_and_returns_file_key(self) -> None:
+        with mock.patch.object(MODULE, "fetch_tenant_access_token", return_value="tenant-token"):
+            client = MODULE.FeishuClient("app_id", "app_secret")
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "doc.txt"
+            source.write_text("payload", encoding="utf-8")
+            with mock.patch.object(
+                MODULE,
+                "build_multipart_form",
+                return_value=("multipart/form-data; boundary=test", b"--test--"),
+            ) as mocked_multipart, mock.patch.object(
+                MODULE,
+                "request_json",
+                return_value={"code": 0, "data": {"file_key": "fk-uploaded"}},
+            ) as mocked_request_json:
+                file_key = client.upload_file(source)
+        self.assertEqual(file_key, "fk-uploaded")
+        mocked_multipart.assert_called_once_with("file", source)
+        kwargs = mocked_request_json.call_args.kwargs
+        self.assertEqual(kwargs["method"], "POST")
+        self.assertIn("/im/v1/files", kwargs["url"])
+        self.assertEqual(kwargs["payload"], b"--test--")
+        self.assertEqual(kwargs["headers"]["Content-Type"], "multipart/form-data; boundary=test")
+
+    def test_feishu_client_send_file_message_posts_json_payload(self) -> None:
+        with mock.patch.object(MODULE, "fetch_tenant_access_token", return_value="tenant-token"):
+            client = MODULE.FeishuClient("app_id", "app_secret")
+        with mock.patch.object(
+            MODULE,
+            "send_json",
+            return_value={"code": 0, "data": {"message_id": "om_1"}},
+        ) as mocked_send_json:
+            response = client.send_file_message("oc_chat_1", "file_key_1")
+        self.assertEqual(response["code"], 0)
+        args = mocked_send_json.call_args.args
+        self.assertEqual(
+            args[0],
+            "https://open.feishu.cn/open-apis/im/v1/messages?receive_id_type=chat_id",
+        )
+        self.assertEqual(
+            args[1],
+            {
+                "receive_id": "oc_chat_1",
+                "msg_type": "file",
+                "content": '{"file_key":"file_key_1"}',
+            },
+        )
+        self.assertEqual(args[2]["Authorization"], "Bearer tenant-token")
 
 
 if __name__ == "__main__":

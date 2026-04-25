@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import time
+import urllib.parse
+import urllib.request
+import uuid
 from pathlib import Path
 
 
@@ -12,6 +16,125 @@ REQUIRED_ENV_VARS = (
     "FEISHU_APP_SECRET",
     "FEISHU_YANG_CHAT_ID",
 )
+FEISHU_API_BASE = "https://open.feishu.cn/open-apis"
+
+
+def request_json(
+    url: str,
+    method: str = "GET",
+    payload: bytes | None = None,
+    headers: dict[str, str] | None = None,
+) -> dict:
+    request = urllib.request.Request(
+        url=url,
+        data=payload,
+        headers=headers or {},
+        method=method.upper(),
+    )
+    with urllib.request.urlopen(request) as response:
+        raw = response.read()
+    decoded = raw.decode("utf-8")
+    data = json.loads(decoded)
+    if isinstance(data, dict):
+        return data
+    raise RuntimeError("Expected JSON object response")
+
+
+def send_json(url: str, payload: dict, headers: dict[str, str]) -> dict:
+    request_headers = {"Content-Type": "application/json; charset=utf-8"}
+    request_headers.update(headers)
+    body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+    return request_json(url=url, method="POST", payload=body, headers=request_headers)
+
+
+def fetch_tenant_access_token(app_id: str, app_secret: str) -> str:
+    response = send_json(
+        f"{FEISHU_API_BASE}/auth/v3/tenant_access_token/internal",
+        {"app_id": app_id, "app_secret": app_secret},
+        {},
+    )
+    token = response.get("tenant_access_token")
+    if not token:
+        token = _as_dict(response.get("data")).get("tenant_access_token")
+    if not token:
+        raise RuntimeError("tenant_access_token is missing in response")
+    return str(token)
+
+
+def build_multipart_form(field_name: str, file_path: Path | str) -> tuple[str, bytes]:
+    source_path = Path(file_path)
+    filename = source_path.name
+    file_bytes = source_path.read_bytes()
+    boundary = f"----feishu-yang-{uuid.uuid4().hex}"
+    body = (
+        f"--{boundary}\r\n"
+        f'Content-Disposition: form-data; name="{field_name}"; filename="{filename}"\r\n'
+        "Content-Type: application/octet-stream\r\n\r\n"
+    ).encode("utf-8") + file_bytes + f"\r\n--{boundary}--\r\n".encode("utf-8")
+    return f"multipart/form-data; boundary={boundary}", body
+
+
+class FeishuClient:
+    def __init__(self, app_id: str, app_secret: str, api_base: str = FEISHU_API_BASE):
+        self.api_base = api_base.rstrip("/")
+        self.tenant_access_token = fetch_tenant_access_token(app_id, app_secret)
+
+    def _auth_headers(self) -> dict[str, str]:
+        return {"Authorization": f"Bearer {self.tenant_access_token}"}
+
+    def list_recent_files(
+        self,
+        chat_id: str,
+        sender_name: str,
+        sender_open_id: str,
+        hours: int,
+    ) -> list[dict]:
+        min_created_ms = int((time.time() - (hours * 3600)) * 1000)
+        query = urllib.parse.urlencode({"container_id_type": "chat", "page_size": 50})
+        url = f"{self.api_base}/im/v1/chats/{chat_id}/messages?{query}"
+        response = request_json(url=url, method="GET", headers=self._auth_headers())
+        items = _as_dict(response.get("data")).get("items", [])
+        if not isinstance(items, list):
+            items = []
+        return filter_recent_file_messages(items, sender_name, sender_open_id, min_created_ms)
+
+    def download_file(self, file_key: str, output_path: Path | str) -> Path:
+        target_path = Path(output_path)
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        url = f"{self.api_base}/im/v1/files/{file_key}/download"
+        request = urllib.request.Request(url=url, method="GET", headers=self._auth_headers())
+        with urllib.request.urlopen(request) as response:
+            payload = response.read()
+        target_path.write_bytes(payload)
+        return target_path
+
+    def upload_file(self, file_path: Path | str) -> str:
+        source_path = Path(file_path)
+        content_type, body = build_multipart_form("file", source_path)
+        headers = self._auth_headers()
+        headers["Content-Type"] = content_type
+        response = request_json(
+            url=f"{self.api_base}/im/v1/files",
+            method="POST",
+            payload=body,
+            headers=headers,
+        )
+        file_key = _as_dict(response.get("data")).get("file_key")
+        if not file_key:
+            raise RuntimeError("file_key is missing in upload response")
+        return str(file_key)
+
+    def send_file_message(self, chat_id: str, file_key: str) -> dict:
+        payload = {
+            "receive_id": chat_id,
+            "msg_type": "file",
+            "content": json.dumps({"file_key": file_key}, separators=(",", ":")),
+        }
+        return send_json(
+            f"{self.api_base}/im/v1/messages?receive_id_type=chat_id",
+            payload,
+            self._auth_headers(),
+        )
 
 
 def require_settings(env: dict[str, str]) -> dict[str, str]:
