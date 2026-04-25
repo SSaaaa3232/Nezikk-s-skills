@@ -26,6 +26,12 @@ def make_batch_dir_name(timestamp: str, label: str) -> str:
     return f"{timestamp}-{label}"
 
 
+def _as_dict(value: object) -> dict:
+    if isinstance(value, dict):
+        return value
+    return {}
+
+
 def parse_selection(raw: str, max_index: int) -> list[int]:
     if max_index < 1:
         raise ValueError("max_index must be >= 1")
@@ -64,8 +70,8 @@ def filter_recent_file_messages(
     for message in messages:
         if message.get("message_type") != "file":
             continue
-        sender = message.get("sender") or {}
-        sender_id = sender.get("sender_id") or {}
+        sender = _as_dict(message.get("sender"))
+        sender_id = _as_dict(sender.get("sender_id"))
         if sender_name and sender.get("sender_name") != sender_name:
             continue
         if sender_open_id and sender_id.get("open_id") != sender_open_id:
@@ -83,18 +89,23 @@ def filter_recent_file_messages(
 def prepare_batch_directory(output_root: Path, timestamp: str, label: str) -> Path:
     output_root.mkdir(parents=True, exist_ok=True)
     base_name = make_batch_dir_name(timestamp, label)
-    target = output_root / base_name
-    index = 2
-    while target.exists():
-        target = output_root / f"{base_name}-{index}"
-        index += 1
-    target.mkdir(parents=False, exist_ok=False)
-    return target
+    index = 1
+    while True:
+        if index == 1:
+            name = base_name
+        else:
+            name = f"{base_name}-{index}"
+        target = output_root / name
+        try:
+            target.mkdir(parents=False, exist_ok=False)
+            return target
+        except FileExistsError:
+            index += 1
 
 
 def serialize_candidate(message: dict) -> dict:
-    body = message.get("body") or {}
-    sender = message.get("sender") or {}
+    body = _as_dict(message.get("body"))
+    sender = _as_dict(message.get("sender"))
     return {
         "message_id": message.get("message_id"),
         "file_key": body.get("file_key"),
