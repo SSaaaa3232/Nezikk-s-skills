@@ -94,6 +94,37 @@ class FeishuYangCliHelperTests(unittest.TestCase):
         )
         self.assertEqual([item["message_id"] for item in filtered], ["m-keep"])
 
+    def test_filter_recent_file_messages_excludes_equal_boundary_timestamp(self) -> None:
+        messages = [
+            {
+                "message_id": "m-equal",
+                "message_type": "file",
+                "create_time": "1714000000000",
+                "sender": {
+                    "sender_name": "Yang",
+                    "sender_id": {"open_id": "ou_yang"},
+                },
+                "body": {"file_key": "fk-eq", "file_name": "equal.pdf"},
+            },
+            {
+                "message_id": "m-newer",
+                "message_type": "file",
+                "create_time": "1714000000001",
+                "sender": {
+                    "sender_name": "Yang",
+                    "sender_id": {"open_id": "ou_yang"},
+                },
+                "body": {"file_key": "fk-new", "file_name": "newer.pdf"},
+            },
+        ]
+        filtered = MODULE.filter_recent_file_messages(
+            messages,
+            sender_name="Yang",
+            sender_open_id="ou_yang",
+            min_created_ms=1714000000000,
+        )
+        self.assertEqual([item["message_id"] for item in filtered], ["m-newer"])
+
     def test_filter_recent_file_messages_tolerates_malformed_nested_values(self) -> None:
         messages = [
             {

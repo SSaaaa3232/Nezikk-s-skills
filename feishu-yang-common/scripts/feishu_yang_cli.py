@@ -80,7 +80,7 @@ def filter_recent_file_messages(
             created = int(message.get("create_time", 0))
         except (TypeError, ValueError):
             continue
-        if created < min_created_ms:
+        if created <= min_created_ms:
             continue
         filtered.append(message)
     return filtered
