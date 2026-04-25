@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import sys
 import time
 import urllib.parse
 import urllib.request
@@ -353,11 +355,140 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def load_runtime_settings(env: dict[str, str]) -> dict[str, str]:
+    settings = require_settings(env)
+    settings["FEISHU_YANG_SENDER_NAME"] = env.get("FEISHU_YANG_SENDER_NAME", "")
+    settings["FEISHU_YANG_SENDER_OPEN_ID"] = env.get("FEISHU_YANG_SENDER_OPEN_ID", "")
+    settings["FEISHU_API_BASE"] = env.get("FEISHU_API_BASE", "")
+    settings["FEISHU_HTTP_TIMEOUT"] = env.get("FEISHU_HTTP_TIMEOUT", "")
+    return settings
+
+
+def build_client_from_settings(settings: dict[str, str]) -> FeishuClient:
+    kwargs: dict[str, object] = {}
+    api_base = settings.get("FEISHU_API_BASE", "").strip()
+    if api_base:
+        kwargs["api_base"] = api_base
+    timeout_raw = settings.get("FEISHU_HTTP_TIMEOUT", "").strip()
+    if timeout_raw:
+        try:
+            timeout_value = int(timeout_raw)
+        except ValueError as exc:
+            raise RuntimeError("FEISHU_HTTP_TIMEOUT must be an integer") from exc
+        if timeout_value <= 0:
+            raise RuntimeError("FEISHU_HTTP_TIMEOUT must be > 0")
+        kwargs["timeout"] = timeout_value
+    return FeishuClient(
+        settings["FEISHU_APP_ID"],
+        settings["FEISHU_APP_SECRET"],
+        **kwargs,
+    )
+
+
+def run_list_recent_files(args: argparse.Namespace) -> int:
+    settings = load_runtime_settings(dict(os.environ))
+    client = build_client_from_settings(settings)
+    messages = client.list_recent_files(
+        chat_id=settings["FEISHU_YANG_CHAT_ID"],
+        sender_name=settings["FEISHU_YANG_SENDER_NAME"],
+        sender_open_id=settings["FEISHU_YANG_SENDER_OPEN_ID"],
+        hours=args.hours,
+    )
+    candidates = [serialize_candidate(message) for message in messages]
+    if args.json:
+        print(json.dumps(candidates, ensure_ascii=False))
+        return 0
+    if not candidates:
+        print("No recent files found.")
+        return 0
+    for index, item in enumerate(candidates, start=1):
+        print(f"{index}. {item.get('file_name') or '-'} [{item.get('message_id')}]")
+    return 0
+
+
+def run_send_file(args: argparse.Namespace) -> int:
+    if not args.path:
+        raise RuntimeError("send-file requires --path")
+    settings = load_runtime_settings(dict(os.environ))
+    source_path = Path(args.path)
+    if not source_path.is_file():
+        raise RuntimeError(f"File not found: {source_path}")
+    client = build_client_from_settings(settings)
+    file_key = client.upload_file(source_path)
+    response = client.send_file_message(settings["FEISHU_YANG_CHAT_ID"], file_key)
+    message_id = _as_dict(response.get("data")).get("message_id")
+    payload: dict[str, str] = {"status": "sent", "file_key": file_key}
+    if message_id:
+        payload["message_id"] = str(message_id)
+    print(json.dumps(payload, ensure_ascii=False))
+    return 0
+
+
+def run_download_files(args: argparse.Namespace) -> int:
+    if not args.message_ids:
+        raise RuntimeError("download-files requires at least one --message-id")
+    settings = load_runtime_settings(dict(os.environ))
+    client = build_client_from_settings(settings)
+    requested_ids = list(dict.fromkeys(args.message_ids))
+    recent_messages = client.list_recent_files(
+        chat_id=settings["FEISHU_YANG_CHAT_ID"],
+        sender_name=settings["FEISHU_YANG_SENDER_NAME"],
+        sender_open_id=settings["FEISHU_YANG_SENDER_OPEN_ID"],
+        hours=24,
+    )
+    by_message_id = {
+        str(message.get("message_id")): message
+        for message in recent_messages
+        if message.get("message_id")
+    }
+    missing_ids = [message_id for message_id in requested_ids if message_id not in by_message_id]
+    if missing_ids:
+        joined = ", ".join(missing_ids)
+        raise RuntimeError(f"Message IDs not found in recent files: {joined}")
+
+    output_root = Path(args.output_root)
+    batch_dir = prepare_batch_directory(output_root, time.strftime("%Y%m%d-%H%M%S"), "yang-files")
+    downloaded: list[dict[str, str]] = []
+    existing_names: set[str] = set()
+
+    for message_id in requested_ids:
+        message = by_message_id[message_id]
+        body = _as_dict(message.get("body"))
+        file_key = body.get("file_key")
+        if not file_key:
+            raise RuntimeError(f"Missing file_key for message: {message_id}")
+        file_name = str(body.get("file_name") or f"{message_id}.bin")
+        output_path = resolve_output_path(batch_dir, file_name, existing_names)
+        client.download_file(str(file_key), output_path)
+        existing_names.add(output_path.name)
+        downloaded.append(
+            {
+                "message_id": message_id,
+                "file_key": str(file_key),
+                "path": str(output_path),
+            }
+        )
+
+    print(json.dumps({"batch_dir": str(batch_dir), "downloads": downloaded}, ensure_ascii=False))
+    return 0
+
+
 def main() -> int:
     parser = build_parser()
     args = parser.parse_args()
-    print(json.dumps({"command": args.command}, ensure_ascii=False))
-    return 0
+    handlers = {
+        "list-recent-files": run_list_recent_files,
+        "download-files": run_download_files,
+        "send-file": run_send_file,
+    }
+    handler = handlers.get(args.command)
+    if handler is None:
+        parser.error(f"Unknown command: {args.command}")
+    try:
+        return int(handler(args))
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

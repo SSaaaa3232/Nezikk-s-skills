@@ -1,0 +1,7 @@
+interface:
+  display_name: "Download Yang"
+  short_description: "List recent Yang files, confirm indices, and download selected message IDs."
+  default_prompt: "Use $download-yang to list recent Yang files, ask me to choose indices, then download only the confirmed message IDs."
+
+policy:
+  allow_implicit_invocation: true

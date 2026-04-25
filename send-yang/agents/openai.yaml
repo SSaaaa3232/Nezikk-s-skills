@@ -1,0 +1,7 @@
+interface:
+  display_name: "Send Yang"
+  short_description: "Ask for a file path when missing and run send-file to post to Yang chat."
+  default_prompt: "Use $send-yang to ask for the local file path if needed, then run send-file with that path."
+
+policy:
+  allow_implicit_invocation: true

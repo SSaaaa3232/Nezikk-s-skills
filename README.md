@@ -33,10 +33,49 @@ Key files:
 - `docx-creater/SKILL.md`
 - `docx-creater/agents/openai.yaml`
 
+### `download-yang`
+
+Path: `download-yang/`
+
+Purpose:
+- list recent Feishu file candidates from Yang through the shared CLI
+- ask for index selection before downloading
+- download only confirmed `message_id` values
+
+Key files:
+- `download-yang/SKILL.md`
+- `download-yang/agents/openai.yaml`
+
+### `send-yang`
+
+Path: `send-yang/`
+
+Purpose:
+- ask for local file path when missing
+- run shared CLI `send-file --path` to upload and send into Yang chat
+
+Key files:
+- `send-yang/SKILL.md`
+- `send-yang/agents/openai.yaml`
+
+### Shared Feishu CLI
+
+Path: `feishu-yang-common/scripts/feishu_yang_cli.py`
+
+Commands:
+- `list-recent-files` (supports `--json`)
+- `download-files` (accepts repeated `--message-id`)
+- `send-file` (requires `--path`)
+
+Environment variables:
+- required: `FEISHU_APP_ID`, `FEISHU_APP_SECRET`, `FEISHU_YANG_CHAT_ID`
+- optional: `FEISHU_YANG_SENDER_NAME`, `FEISHU_YANG_SENDER_OPEN_ID`, `FEISHU_API_BASE`, `FEISHU_HTTP_TIMEOUT`
+
 ## Tests
 
 Current test coverage:
 - `tests/test_extract_docx_paragraphs.py`
+- `tests/test_feishu_yang_cli.py`
 
 Run:
 
@@ -70,4 +109,8 @@ cp -R synbio-academic-translator ~/.claude/skills/
 cp -R synbio-academic-translator ~/.agents/skills/
 cp -R docx-creater ~/.claude/skills/
 cp -R docx-creater ~/.agents/skills/
+cp -R download-yang ~/.claude/skills/
+cp -R download-yang ~/.agents/skills/
+cp -R send-yang ~/.claude/skills/
+cp -R send-yang ~/.agents/skills/
 ```

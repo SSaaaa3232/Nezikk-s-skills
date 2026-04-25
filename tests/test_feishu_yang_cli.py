@@ -1,4 +1,8 @@
 import importlib.util
+import io
+import json
+import os
+import sys
 import tempfile
 import unittest
 import urllib.error
@@ -580,6 +584,80 @@ class FeishuYangCliHttpTests(unittest.TestCase):
         ):
             with self.assertRaisesRegex(RuntimeError, "permission denied"):
                 client.send_file_message("oc_chat_1", "file_key_1")
+
+
+class FeishuYangCliCommandTests(unittest.TestCase):
+    def test_main_send_file_requires_path(self) -> None:
+        argv = ["feishu_yang_cli", "send-file"]
+        with mock.patch.object(sys, "argv", argv), mock.patch("sys.stderr", new_callable=io.StringIO) as stderr:
+            with self.assertRaises(SystemExit) as exc:
+                MODULE.main()
+        self.assertEqual(exc.exception.code, 2)
+        self.assertIn("--path", stderr.getvalue())
+
+    def test_main_dispatches_send_file_command(self) -> None:
+        argv = ["feishu_yang_cli", "send-file", "--path", "/tmp/mock.pdf"]
+        with mock.patch.object(sys, "argv", argv), mock.patch.object(
+            MODULE, "run_send_file", return_value=0, create=True
+        ) as mocked_handler:
+            result = MODULE.main()
+        self.assertEqual(result, 0)
+        mocked_handler.assert_called_once()
+
+    def test_main_dispatches_download_files_command(self) -> None:
+        argv = ["feishu_yang_cli", "download-files", "--message-id", "om_1"]
+        with mock.patch.object(sys, "argv", argv), mock.patch.object(
+            MODULE, "run_download_files", return_value=0, create=True
+        ) as mocked_handler:
+            result = MODULE.main()
+        self.assertEqual(result, 0)
+        mocked_handler.assert_called_once()
+
+    def test_list_recent_files_json_execution_uses_mocked_client(self) -> None:
+        argv = ["feishu_yang_cli", "list-recent-files", "--hours", "12", "--json"]
+        env = {
+            "FEISHU_APP_ID": "cli-id",
+            "FEISHU_APP_SECRET": "cli-secret",
+            "FEISHU_YANG_CHAT_ID": "oc_chat_1",
+            "FEISHU_YANG_SENDER_NAME": "Yang",
+            "FEISHU_YANG_SENDER_OPEN_ID": "ou_yang",
+        }
+        fake_messages = [
+            {
+                "message_id": "om_1",
+                "body": {"file_key": "fk_1", "file_name": "paper.pdf"},
+                "sender": {"sender_name": "Yang"},
+                "create_time": "1714000000001",
+            }
+        ]
+        expected = [
+            {
+                "message_id": "om_1",
+                "file_key": "fk_1",
+                "file_name": "paper.pdf",
+                "sender_name": "Yang",
+                "create_time": "1714000000001",
+            }
+        ]
+
+        with mock.patch.dict(os.environ, env, clear=True), mock.patch.object(
+            sys, "argv", argv
+        ), mock.patch.object(MODULE, "FeishuClient") as mocked_client_cls, mock.patch(
+            "sys.stdout", new_callable=io.StringIO
+        ) as stdout:
+            mocked_client = mocked_client_cls.return_value
+            mocked_client.list_recent_files.return_value = fake_messages
+            result = MODULE.main()
+
+        self.assertEqual(result, 0)
+        self.assertEqual(json.loads(stdout.getvalue()), expected)
+        mocked_client_cls.assert_called_once_with("cli-id", "cli-secret")
+        mocked_client.list_recent_files.assert_called_once_with(
+            chat_id="oc_chat_1",
+            sender_name="Yang",
+            sender_open_id="ou_yang",
+            hours=12,
+        )
 
 
 if __name__ == "__main__":
