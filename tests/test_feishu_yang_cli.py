@@ -13,7 +13,7 @@ from unittest import mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-CLI_PATH = REPO_ROOT / "feishu-yang-automation" / "scripts" / "feishu_yang_cli.py"
+CLI_PATH = REPO_ROOT / "feishu-yang" / "feishu-yang-automation" / "scripts" / "feishu_yang_cli.py"
 SPEC = importlib.util.spec_from_file_location("feishu_yang_cli", CLI_PATH)
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC is not None

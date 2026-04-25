@@ -33,9 +33,9 @@ Key files:
 - `docx-creater/SKILL.md`
 - `docx-creater/agents/openai.yaml`
 
-### `download-yang`
+### `feishu-yang/download-yang`
 
-Path: `download-yang/`
+Path: `feishu-yang/download-yang/`
 
 Purpose:
 - list recent Feishu file candidates from Yang through the shared CLI
@@ -43,24 +43,24 @@ Purpose:
 - download only confirmed `message_id` values
 
 Key files:
-- `download-yang/SKILL.md`
-- `download-yang/agents/openai.yaml`
+- `feishu-yang/download-yang/SKILL.md`
+- `feishu-yang/download-yang/agents/openai.yaml`
 
-### `send-yang`
+### `feishu-yang/send-yang`
 
-Path: `send-yang/`
+Path: `feishu-yang/send-yang/`
 
 Purpose:
 - ask for local file path when missing
 - run shared CLI `send-file --path` to upload and send into Yang chat
 
 Key files:
-- `send-yang/SKILL.md`
-- `send-yang/agents/openai.yaml`
+- `feishu-yang/send-yang/SKILL.md`
+- `feishu-yang/send-yang/agents/openai.yaml`
 
 ### Shared Feishu CLI
 
-Path: `feishu-yang-automation/scripts/feishu_yang_cli.py`
+Path: `feishu-yang/feishu-yang-automation/scripts/feishu_yang_cli.py`
 
 Commands:
 - `list-recent-files` (supports `--json`)
@@ -109,12 +109,12 @@ cp -R synbio-academic-translator ~/.claude/skills/
 cp -R synbio-academic-translator ~/.agents/skills/
 cp -R docx-creater ~/.claude/skills/
 cp -R docx-creater ~/.agents/skills/
-cp -R download-yang ~/.claude/skills/
-cp -R download-yang ~/.agents/skills/
-cp -R send-yang ~/.claude/skills/
-cp -R send-yang ~/.agents/skills/
-cp -R feishu-yang-automation ~/.claude/skills/
-cp -R feishu-yang-automation ~/.agents/skills/
+cp -R feishu-yang/download-yang ~/.claude/skills/
+cp -R feishu-yang/download-yang ~/.agents/skills/
+cp -R feishu-yang/send-yang ~/.claude/skills/
+cp -R feishu-yang/send-yang ~/.agents/skills/
+cp -R feishu-yang/feishu-yang-automation ~/.claude/skills/
+cp -R feishu-yang/feishu-yang-automation ~/.agents/skills/
 ```
 
-`download-yang` and `send-yang` depend on `feishu-yang-automation/scripts/feishu_yang_cli.py`, so install/copy `feishu-yang-automation` together with those two skills.
+`download-yang` and `send-yang` depend on `feishu-yang/feishu-yang-automation/scripts/feishu_yang_cli.py`, so install/copy `feishu-yang-automation` together with those two skills.

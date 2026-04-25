@@ -10,7 +10,7 @@ description: Send a local file to the Yang Feishu chat through the shared CLI. A
 Use the shared CLI to upload a local file and send it to the configured Yang chat.
 
 CLI path:
-- `feishu-yang-automation/scripts/feishu_yang_cli.py`
+- `feishu-yang/feishu-yang-automation/scripts/feishu_yang_cli.py`
 - Keep the sibling folder `feishu-yang-automation/` installed with this skill.
 
 ## Workflow
@@ -22,7 +22,7 @@ CLI path:
 - If it does not exist, ask for a corrected path.
 
 3. Send the file with CLI:
-- `python3 feishu-yang-automation/scripts/feishu_yang_cli.py send-file --path "<local-path>"`
+- `python3 feishu-yang/feishu-yang-automation/scripts/feishu_yang_cli.py send-file --path "<local-path>"`
 
 4. Report success output from CLI.
 
