@@ -42,6 +42,96 @@ class FeishuYangCliHelperTests(unittest.TestCase):
             resolved = MODULE.resolve_output_path(output_dir, "report.pdf", set())
             self.assertEqual(resolved.name, "report-2.pdf")
 
+    def test_filter_recent_file_messages_matches_sender_and_time(self) -> None:
+        messages = [
+            {
+                "message_id": "m-keep",
+                "message_type": "file",
+                "create_time": "1714000000001",
+                "sender": {
+                    "sender_name": "Yang",
+                    "sender_id": {"open_id": "ou_yang"},
+                },
+                "body": {"file_key": "fk-1", "file_name": "ok.pdf"},
+            },
+            {
+                "message_id": "m-old",
+                "message_type": "file",
+                "create_time": "1713999999999",
+                "sender": {
+                    "sender_name": "Yang",
+                    "sender_id": {"open_id": "ou_yang"},
+                },
+                "body": {"file_key": "fk-2", "file_name": "old.pdf"},
+            },
+            {
+                "message_id": "m-other-type",
+                "message_type": "text",
+                "create_time": "1714000001000",
+                "sender": {
+                    "sender_name": "Yang",
+                    "sender_id": {"open_id": "ou_yang"},
+                },
+                "body": {},
+            },
+            {
+                "message_id": "m-other-sender",
+                "message_type": "file",
+                "create_time": "1714000002000",
+                "sender": {
+                    "sender_name": "SomeoneElse",
+                    "sender_id": {"open_id": "ou_else"},
+                },
+                "body": {"file_key": "fk-3", "file_name": "other.pdf"},
+            },
+        ]
+        filtered = MODULE.filter_recent_file_messages(
+            messages,
+            sender_name="Yang",
+            sender_open_id="ou_yang",
+            min_created_ms=1714000000000,
+        )
+        self.assertEqual([item["message_id"] for item in filtered], ["m-keep"])
+
+    def test_parse_selection_supports_csv_and_ranges(self) -> None:
+        self.assertEqual(MODULE.parse_selection("1,3-4", max_index=5), [1, 3, 4])
+
+    def test_prepare_batch_directory_creates_unique_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output_root = Path(tmp)
+            first = MODULE.prepare_batch_directory(
+                output_root, timestamp="20260425-150000", label="yang-files"
+            )
+            second = MODULE.prepare_batch_directory(
+                output_root, timestamp="20260425-150000", label="yang-files"
+            )
+            self.assertTrue(first.is_dir())
+            self.assertTrue(second.is_dir())
+            self.assertEqual(first.name, "20260425-150000-yang-files")
+            self.assertEqual(second.name, "20260425-150000-yang-files-2")
+
+    def test_serialize_candidate_extracts_file_fields(self) -> None:
+        message = {
+            "message_id": "m-1",
+            "message_type": "file",
+            "create_time": "1714000000001",
+            "sender": {
+                "sender_name": "Yang",
+                "sender_id": {"open_id": "ou_yang"},
+            },
+            "body": {"file_key": "fk-1", "file_name": "ok.pdf"},
+        }
+        self.assertEqual(
+            MODULE.serialize_candidate(message),
+            {
+                "message_id": "m-1",
+                "file_key": "fk-1",
+                "file_name": "ok.pdf",
+                "sender_name": "Yang",
+                "create_time": "1714000000001",
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

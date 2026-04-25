@@ -26,6 +26,84 @@ def make_batch_dir_name(timestamp: str, label: str) -> str:
     return f"{timestamp}-{label}"
 
 
+def parse_selection(raw: str, max_index: int) -> list[int]:
+    if max_index < 1:
+        raise ValueError("max_index must be >= 1")
+
+    values: list[int] = []
+    seen: set[int] = set()
+    for part in raw.split(","):
+        token = part.strip()
+        if not token:
+            continue
+        if "-" in token:
+            left, right = token.split("-", 1)
+            start = int(left.strip())
+            end = int(right.strip())
+            if start > end:
+                raise ValueError(f"Invalid range: {token}")
+            numbers = range(start, end + 1)
+        else:
+            numbers = [int(token)]
+        for number in numbers:
+            if number < 1 or number > max_index:
+                raise ValueError(f"Selection out of range: {number}")
+            if number not in seen:
+                values.append(number)
+                seen.add(number)
+    return values
+
+
+def filter_recent_file_messages(
+    messages: list[dict],
+    sender_name: str,
+    sender_open_id: str,
+    min_created_ms: int,
+) -> list[dict]:
+    filtered: list[dict] = []
+    for message in messages:
+        if message.get("message_type") != "file":
+            continue
+        sender = message.get("sender") or {}
+        sender_id = sender.get("sender_id") or {}
+        if sender_name and sender.get("sender_name") != sender_name:
+            continue
+        if sender_open_id and sender_id.get("open_id") != sender_open_id:
+            continue
+        try:
+            created = int(message.get("create_time", 0))
+        except (TypeError, ValueError):
+            continue
+        if created < min_created_ms:
+            continue
+        filtered.append(message)
+    return filtered
+
+
+def prepare_batch_directory(output_root: Path, timestamp: str, label: str) -> Path:
+    output_root.mkdir(parents=True, exist_ok=True)
+    base_name = make_batch_dir_name(timestamp, label)
+    target = output_root / base_name
+    index = 2
+    while target.exists():
+        target = output_root / f"{base_name}-{index}"
+        index += 1
+    target.mkdir(parents=False, exist_ok=False)
+    return target
+
+
+def serialize_candidate(message: dict) -> dict:
+    body = message.get("body") or {}
+    sender = message.get("sender") or {}
+    return {
+        "message_id": message.get("message_id"),
+        "file_key": body.get("file_key"),
+        "file_name": body.get("file_name"),
+        "sender_name": sender.get("sender_name"),
+        "create_time": message.get("create_time"),
+    }
+
+
 def resolve_output_path(output_dir: Path, filename: str, existing_names: set[str]) -> Path:
     candidate = Path(filename).name
 
