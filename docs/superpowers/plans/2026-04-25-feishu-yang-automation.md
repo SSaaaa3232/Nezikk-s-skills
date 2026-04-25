@@ -4,7 +4,7 @@
 
 **Goal:** Build two reusable skills, `/download-yang` and `/send-yang`, backed by one shared Feishu CLI that can list recent file messages from a fixed group, download selected files to the desktop, and upload a local file back to the same group.
 
-**Architecture:** Keep the skills thin and declarative. Put all Feishu authentication, API calls, filtering, download path logic, and upload/send logic into a single Python CLI under `feishu-yang-common/scripts/feishu_yang_cli.py`, then have the two skills invoke that script with the configured environment variables.
+**Architecture:** Keep the skills thin and declarative. Put all Feishu authentication, API calls, filtering, download path logic, and upload/send logic into a single Python CLI under `feishu-yang-automation/scripts/feishu_yang_cli.py`, then have the two skills invoke that script with the configured environment variables.
 
 **Tech Stack:** Python 3 standard library, unittest, Feishu Open Platform HTTP APIs, Markdown skill files, OpenAI skill metadata YAML.
 
@@ -13,7 +13,7 @@
 ### Task 1: Build the shared CLI skeleton and deterministic helpers
 
 **Files:**
-- Create: `feishu-yang-common/scripts/feishu_yang_cli.py`
+- Create: `feishu-yang-automation/scripts/feishu_yang_cli.py`
 - Create: `tests/test_feishu_yang_cli.py`
 
 - [ ] **Step 1: Write the failing helper tests**
@@ -25,7 +25,7 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-CLI_PATH = REPO_ROOT / "feishu-yang-common" / "scripts" / "feishu_yang_cli.py"
+CLI_PATH = REPO_ROOT / "feishu-yang-automation" / "scripts" / "feishu_yang_cli.py"
 SPEC = importlib.util.spec_from_file_location("feishu_yang_cli", CLI_PATH)
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC.loader is not None
@@ -53,7 +53,7 @@ class FeishuYangCliHelperTests(unittest.TestCase):
 
 Run: `python3 -m unittest tests.test_feishu_yang_cli.FeishuYangCliHelperTests -v`
 
-Expected: FAIL with an import error because `feishu-yang-common/scripts/feishu_yang_cli.py` does not exist yet.
+Expected: FAIL with an import error because `feishu-yang-automation/scripts/feishu_yang_cli.py` does not exist yet.
 
 - [ ] **Step 3: Write the minimal CLI skeleton and helper functions**
 
@@ -149,14 +149,14 @@ Expected: PASS for the three helper tests.
 - [ ] **Step 5: Commit the skeleton**
 
 ```bash
-git add feishu-yang-common/scripts/feishu_yang_cli.py tests/test_feishu_yang_cli.py
+git add feishu-yang-automation/scripts/feishu_yang_cli.py tests/test_feishu_yang_cli.py
 git commit -m "feat: add feishu yang cli skeleton"
 ```
 
 ### Task 2: Implement recent file discovery and desktop download preparation
 
 **Files:**
-- Modify: `feishu-yang-common/scripts/feishu_yang_cli.py`
+- Modify: `feishu-yang-automation/scripts/feishu_yang_cli.py`
 - Modify: `tests/test_feishu_yang_cli.py`
 
 - [ ] **Step 1: Write failing tests for filtering, selection parsing, and directory creation**
@@ -294,14 +294,14 @@ Expected: PASS for the helper tests and list-path tests.
 - [ ] **Step 5: Commit the discovery and batch helpers**
 
 ```bash
-git add feishu-yang-common/scripts/feishu_yang_cli.py tests/test_feishu_yang_cli.py
+git add feishu-yang-automation/scripts/feishu_yang_cli.py tests/test_feishu_yang_cli.py
 git commit -m "feat: add recent file discovery helpers"
 ```
 
 ### Task 3: Implement live Feishu API calls for list, download, and send
 
 **Files:**
-- Modify: `feishu-yang-common/scripts/feishu_yang_cli.py`
+- Modify: `feishu-yang-automation/scripts/feishu_yang_cli.py`
 - Modify: `tests/test_feishu_yang_cli.py`
 
 - [ ] **Step 1: Write failing tests around the HTTP client boundaries**
@@ -470,14 +470,14 @@ Expected: PASS with mocked HTTP calls.
 - [ ] **Step 5: Commit the live API layer**
 
 ```bash
-git add feishu-yang-common/scripts/feishu_yang_cli.py tests/test_feishu_yang_cli.py
+git add feishu-yang-automation/scripts/feishu_yang_cli.py tests/test_feishu_yang_cli.py
 git commit -m "feat: add feishu api download and send support"
 ```
 
 ### Task 4: Wire the CLI commands, add the two skills, and update repository docs
 
 **Files:**
-- Modify: `feishu-yang-common/scripts/feishu_yang_cli.py`
+- Modify: `feishu-yang-automation/scripts/feishu_yang_cli.py`
 - Create: `download-yang/SKILL.md`
 - Create: `download-yang/agents/openai.yaml`
 - Create: `send-yang/SKILL.md`
@@ -612,7 +612,7 @@ description: Use when the user types `/download-yang` or asks to list and fetch 
 
 # Download Yang
 
-Run `python3 feishu-yang-common/scripts/feishu_yang_cli.py list-recent-files --json` first.
+Run `python3 feishu-yang-automation/scripts/feishu_yang_cli.py list-recent-files --json` first.
 
 Show the candidate files to the user with index, send time, and file name.
 Ask which indices to fetch before downloading anything.
@@ -628,7 +628,7 @@ description: Use when the user types `/send-yang` or asks to send a local file b
 # Send Yang
 
 If the user did not provide a file path, ask for one.
-Then run `python3 feishu-yang-common/scripts/feishu_yang_cli.py send-file --path <absolute-path>`.
+Then run `python3 feishu-yang-automation/scripts/feishu_yang_cli.py send-file --path <absolute-path>`.
 Report whether the upload and group send succeeded.
 ```
 
@@ -674,14 +674,14 @@ Expected: PASS for the existing docx test plus the new Feishu CLI tests.
 - [ ] **Step 6: Commit the wired commands, skills, and docs**
 
 ```bash
-git add README.md download-yang/SKILL.md download-yang/agents/openai.yaml send-yang/SKILL.md send-yang/agents/openai.yaml feishu-yang-common/scripts/feishu_yang_cli.py tests/test_feishu_yang_cli.py
+git add README.md download-yang/SKILL.md download-yang/agents/openai.yaml send-yang/SKILL.md send-yang/agents/openai.yaml feishu-yang-automation/scripts/feishu_yang_cli.py tests/test_feishu_yang_cli.py
 git commit -m "feat: add feishu yang download and send skills"
 ```
 
 ### Task 5: Manual verification with real credentials after implementation
 
 **Files:**
-- Modify: `feishu-yang-common/scripts/feishu_yang_cli.py` only if a live API mismatch is discovered
+- Modify: `feishu-yang-automation/scripts/feishu_yang_cli.py` only if a live API mismatch is discovered
 
 - [ ] **Step 1: Export the real runtime settings locally**
 
@@ -694,25 +694,25 @@ export FEISHU_YANG_SENDER_NAME="杨东东"
 
 - [ ] **Step 2: Verify recent file discovery against the fixed group**
 
-Run: `python3 feishu-yang-common/scripts/feishu_yang_cli.py list-recent-files --json`
+Run: `python3 feishu-yang-automation/scripts/feishu_yang_cli.py list-recent-files --json`
 
 Expected: JSON output containing only file messages from the last 24 hours that match the configured sender.
 
 - [ ] **Step 3: Download a real candidate into the desktop folder**
 
-Run: `python3 feishu-yang-common/scripts/feishu_yang_cli.py download-files --message-id om_xxx`
+Run: `python3 feishu-yang-automation/scripts/feishu_yang_cli.py download-files --message-id om_xxx`
 
 Expected: the script prints the created batch directory under `~/Desktop/yang-downloads/` and the downloaded file is present there.
 
 - [ ] **Step 4: Send a real local file back to the group**
 
-Run: `python3 feishu-yang-common/scripts/feishu_yang_cli.py send-file --path /absolute/path/to/test-file.pdf`
+Run: `python3 feishu-yang-automation/scripts/feishu_yang_cli.py send-file --path /absolute/path/to/test-file.pdf`
 
 Expected: the script prints a success message and the file appears in the fixed Feishu group.
 
 - [ ] **Step 5: Commit any live-API compatibility fixes**
 
 ```bash
-git add feishu-yang-common/scripts/feishu_yang_cli.py tests/test_feishu_yang_cli.py
+git add feishu-yang-automation/scripts/feishu_yang_cli.py tests/test_feishu_yang_cli.py
 git commit -m "fix: align feishu yang cli with live api responses"
 ```

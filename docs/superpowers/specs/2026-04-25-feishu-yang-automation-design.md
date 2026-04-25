@@ -87,8 +87,8 @@ First release behavior:
 - `download-yang/agents/openai.yaml`
 - `send-yang/SKILL.md`
 - `send-yang/agents/openai.yaml`
-- `feishu-yang-common/scripts/feishu_yang_cli.py`
-- `feishu-yang-common/scripts/__init__.py` only if packaging is useful during implementation
+- `feishu-yang-automation/scripts/feishu_yang_cli.py`
+- `feishu-yang-automation/scripts/__init__.py` only if packaging is useful during implementation
 - `tests/test_feishu_yang_cli.py`
 
 The two skills should stay small. They describe the workflow and delegate API work to the shared script.

@@ -60,7 +60,7 @@ Key files:
 
 ### Shared Feishu CLI
 
-Path: `feishu-yang-common/scripts/feishu_yang_cli.py`
+Path: `feishu-yang-automation/scripts/feishu_yang_cli.py`
 
 Commands:
 - `list-recent-files` (supports `--json`)
@@ -113,8 +113,8 @@ cp -R download-yang ~/.claude/skills/
 cp -R download-yang ~/.agents/skills/
 cp -R send-yang ~/.claude/skills/
 cp -R send-yang ~/.agents/skills/
-cp -R feishu-yang-common ~/.claude/skills/
-cp -R feishu-yang-common ~/.agents/skills/
+cp -R feishu-yang-automation ~/.claude/skills/
+cp -R feishu-yang-automation ~/.agents/skills/
 ```
 
-`download-yang` and `send-yang` depend on `feishu-yang-common/scripts/feishu_yang_cli.py`, so install/copy `feishu-yang-common` together with those two skills.
+`download-yang` and `send-yang` depend on `feishu-yang-automation/scripts/feishu_yang_cli.py`, so install/copy `feishu-yang-automation` together with those two skills.

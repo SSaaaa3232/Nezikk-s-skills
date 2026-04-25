@@ -10,13 +10,13 @@ description: Download recent Feishu files sent by Yang. Lists recent candidate f
 Use the shared CLI script to find recent Yang file messages, confirm user selection by index, and download only confirmed files.
 
 CLI path:
-- `feishu-yang-common/scripts/feishu_yang_cli.py`
-- Keep the sibling folder `feishu-yang-common/` installed with this skill.
+- `feishu-yang-automation/scripts/feishu_yang_cli.py`
+- Keep the sibling folder `feishu-yang-automation/` installed with this skill.
 
 ## Workflow
 
 1. List recent candidates in JSON:
-- `python3 feishu-yang-common/scripts/feishu_yang_cli.py list-recent-files --json`
+- `python3 feishu-yang-automation/scripts/feishu_yang_cli.py list-recent-files --json`
 
 2. Present numbered candidates to the user.
 - Show each item with index, `file_name`, `message_id`, and `create_time` when present.
@@ -26,7 +26,7 @@ CLI path:
 - Confirm the resolved message IDs before downloading.
 
 4. Download only confirmed message IDs:
-- `python3 feishu-yang-common/scripts/feishu_yang_cli.py download-files --hours <N> --message-id <id1> --message-id <id2>`
+- `python3 feishu-yang-automation/scripts/feishu_yang_cli.py download-files --hours <N> --message-id <id1> --message-id <id2>`
 
 5. Report downloaded paths from CLI output.
 
