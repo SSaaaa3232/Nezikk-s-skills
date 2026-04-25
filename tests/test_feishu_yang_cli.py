@@ -170,6 +170,31 @@ class FeishuYangCliHelperTests(unittest.TestCase):
         )
         self.assertEqual([item["message_id"] for item in filtered], ["m-keep"])
 
+    def test_filter_recent_file_messages_supports_real_feishu_shapes(self) -> None:
+        messages = [
+            {
+                "message_id": "m-file",
+                "msg_type": "file",
+                "create_time": "1714000000001",
+                "sender": {"id": "ou_yang", "id_type": "open_id"},
+                "body": {"content": '{"file_key":"fk_1","file_name":"paper.pdf"}'},
+            },
+            {
+                "message_id": "m-text",
+                "msg_type": "text",
+                "create_time": "1714000000002",
+                "sender": {"id": "ou_yang", "id_type": "open_id"},
+                "body": {"content": '{"text":"hi"}'},
+            },
+        ]
+        filtered = MODULE.filter_recent_file_messages(
+            messages,
+            sender_name="",
+            sender_open_id="ou_yang",
+            min_created_ms=1714000000000,
+        )
+        self.assertEqual([item["message_id"] for item in filtered], ["m-file"])
+
     def test_parse_selection_supports_csv_and_ranges(self) -> None:
         self.assertEqual(MODULE.parse_selection("1,3-4", max_index=5), [1, 3, 4])
 
@@ -266,6 +291,24 @@ class FeishuYangCliHelperTests(unittest.TestCase):
                 "file_name": None,
                 "sender_name": None,
                 "create_time": "1714000000002",
+            },
+        )
+
+    def test_serialize_candidate_reads_file_fields_from_body_content(self) -> None:
+        message = {
+            "message_id": "m-file",
+            "create_time": "1714000000001",
+            "sender": {"name": "杨东东"},
+            "body": {"content": '{"file_key":"fk_1","file_name":"paper.pdf"}'},
+        }
+        self.assertEqual(
+            MODULE.serialize_candidate(message),
+            {
+                "message_id": "m-file",
+                "file_key": "fk_1",
+                "file_name": "paper.pdf",
+                "sender_name": "杨东东",
+                "create_time": "1714000000001",
             },
         )
 
@@ -394,49 +437,74 @@ class FeishuYangCliHttpTests(unittest.TestCase):
         with mock.patch.object(
             MODULE,
             "request_json",
-            return_value={
-                "code": 0,
-                "data": {
-                    "items": [
-                        {
-                            "message_id": "m-1",
-                            "message_type": "file",
-                            "create_time": "1714000000100",
-                            "sender": {
-                                "sender_name": "Yang",
-                                "sender_id": {"open_id": "ou_yang"},
+            side_effect=[
+                {
+                    "code": 0,
+                    "data": {
+                        "items": [
+                            {
+                                "message_id": "m-1",
+                                "msg_type": "file",
+                                "create_time": "1714000000100",
+                                "sender": {"id": "ou_yang", "id_type": "open_id"},
+                                "body": {"content": '{"file_key":"fk-1","file_name":"ok.pdf"}'},
                             },
-                            "body": {"file_key": "fk-1", "file_name": "ok.pdf"},
-                        },
-                        {
-                            "message_id": "m-2",
-                            "message_type": "text",
-                            "create_time": "1714000000200",
-                            "sender": {
-                                "sender_name": "Yang",
-                                "sender_id": {"open_id": "ou_yang"},
+                            {
+                                "message_id": "m-2",
+                                "msg_type": "text",
+                                "create_time": "1714000000200",
+                                "sender": {"id": "ou_yang", "id_type": "open_id"},
+                                "body": {"content": '{"text":"hi"}'},
                             },
-                            "body": {},
-                        },
-                    ]
-                },
-            },
+                        ],
+                        "has_more": False,
+                        "page_token": "",
+                    },
+                }
+            ],
         ) as mocked_request_json, mock.patch.object(MODULE.time, "time", return_value=1714000000.2):
             items = client.list_recent_files(
                 chat_id="oc_test_chat",
-                sender_name="Yang",
+                sender_name="",
                 sender_open_id="ou_yang",
                 hours=1,
             )
         self.assertEqual([item["message_id"] for item in items], ["m-1"])
         request_kwargs = mocked_request_json.call_args.kwargs
         self.assertEqual(request_kwargs["method"], "GET")
-        self.assertIn("chats/oc_test_chat/messages", request_kwargs["url"])
+        self.assertIn("/im/v1/messages?", request_kwargs["url"])
+        self.assertIn("container_id=oc_test_chat", request_kwargs["url"])
         self.assertIn("page_size=50", request_kwargs["url"])
         self.assertEqual(
             request_kwargs["headers"]["Authorization"],
             "Bearer tenant-token",
         )
+
+    def test_feishu_client_resolves_sender_open_id_from_chat_members(self) -> None:
+        with mock.patch.object(MODULE, "fetch_tenant_access_token", return_value="tenant-token"):
+            client = MODULE.FeishuClient("app_id", "app_secret")
+        with mock.patch.object(
+            MODULE,
+            "request_json",
+            return_value={
+                "code": 0,
+                "data": {
+                    "items": [
+                        {"member_id": "ou_other", "name": "Nezikk"},
+                        {"member_id": "ou_yang", "name": "杨东东"},
+                    ],
+                    "has_more": False,
+                    "page_token": "",
+                },
+            },
+        ) as mocked_request_json:
+            sender_open_id = client.resolve_sender_open_id(
+                "oc_test_chat",
+                sender_name="杨东东",
+                sender_open_id="",
+            )
+        self.assertEqual(sender_open_id, "ou_yang")
+        self.assertIn("/im/v1/chats/oc_test_chat/members", mocked_request_json.call_args.kwargs["url"])
 
     def test_feishu_client_list_recent_files_follows_pagination(self) -> None:
         with mock.patch.object(MODULE, "fetch_tenant_access_token", return_value="tenant-token"):

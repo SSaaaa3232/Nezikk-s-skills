@@ -137,14 +137,19 @@ class FeishuClient:
         hours: int,
     ) -> list[dict]:
         min_created_ms = int((time.time() - (hours * 3600)) * 1000)
+        resolved_sender_open_id = self.resolve_sender_open_id(chat_id, sender_name, sender_open_id)
         page_token = ""
         all_items: list[dict] = []
         while True:
-            params = {"container_id_type": "chat", "page_size": 50}
+            params = {
+                "container_id_type": "chat",
+                "container_id": chat_id,
+                "page_size": 50,
+            }
             if page_token:
                 params["page_token"] = page_token
             query = urllib.parse.urlencode(params)
-            url = f"{self.api_base}/im/v1/chats/{chat_id}/messages?{query}"
+            url = f"{self.api_base}/im/v1/messages?{query}"
             response = validate_feishu_response(
                 request_json(
                     url=url,
@@ -165,12 +170,66 @@ class FeishuClient:
             if not next_page_token:
                 break
             page_token = str(next_page_token)
-        return filter_recent_file_messages(all_items, sender_name, sender_open_id, min_created_ms)
+        return filter_recent_file_messages(
+            all_items,
+            sender_name,
+            resolved_sender_open_id,
+            min_created_ms,
+        )
 
-    def download_file(self, file_key: str, output_path: Path | str) -> Path:
+    def resolve_sender_open_id(
+        self,
+        chat_id: str,
+        sender_name: str,
+        sender_open_id: str,
+    ) -> str:
+        if sender_open_id or not sender_name:
+            return sender_open_id
+
+        page_token = ""
+        while True:
+            params = {"page_size": 50}
+            if page_token:
+                params["page_token"] = page_token
+            query = urllib.parse.urlencode(params)
+            url = f"{self.api_base}/im/v1/chats/{chat_id}/members?{query}"
+            response = validate_feishu_response(
+                request_json(
+                    url=url,
+                    method="GET",
+                    headers=self._auth_headers(),
+                    timeout=self.timeout,
+                ),
+                action="resolve sender open_id",
+            )
+            data = _as_dict(response.get("data"))
+            for member in _as_list(data.get("items")):
+                member_data = _as_dict(member)
+                if member_data.get("name") == sender_name:
+                    member_id = member_data.get("member_id")
+                    if member_id:
+                        return str(member_id)
+            if not data.get("has_more"):
+                break
+            next_page_token = data.get("page_token")
+            if not next_page_token:
+                break
+            page_token = str(next_page_token)
+
+        raise RuntimeError(f"Sender not found in chat members: {sender_name}")
+
+    def download_file(
+        self,
+        file_key: str,
+        output_path: Path | str,
+        message_id: str = "",
+    ) -> Path:
         target_path = Path(output_path)
         target_path.parent.mkdir(parents=True, exist_ok=True)
-        url = f"{self.api_base}/im/v1/files/{file_key}/download"
+        if message_id:
+            url = f"{self.api_base}/im/v1/messages/{message_id}/resources/{file_key}?type=file"
+        else:
+            url = f"{self.api_base}/im/v1/files/{file_key}"
         request = urllib.request.Request(url=url, method="GET", headers=self._auth_headers())
         with urllib.request.urlopen(request, timeout=self.timeout) as response:
             payload = response.read()
@@ -230,6 +289,23 @@ def _as_dict(value: object) -> dict:
     return {}
 
 
+def _as_list(value: object) -> list:
+    if isinstance(value, list):
+        return value
+    return []
+
+
+def _parse_body_content(body: dict) -> dict:
+    content = body.get("content")
+    if not isinstance(content, str) or not content:
+        return {}
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError:
+        return {}
+    return _as_dict(parsed)
+
+
 def parse_selection(raw: str, max_index: int) -> list[int]:
     if max_index < 1:
         raise ValueError("max_index must be >= 1")
@@ -266,13 +342,16 @@ def filter_recent_file_messages(
 ) -> list[dict]:
     filtered: list[dict] = []
     for message in messages:
-        if message.get("message_type") != "file":
+        msg_type = message.get("message_type") or message.get("msg_type")
+        if msg_type != "file":
             continue
         sender = _as_dict(message.get("sender"))
         sender_id = _as_dict(sender.get("sender_id"))
-        if sender_name and sender.get("sender_name") != sender_name:
+        sender_display_name = sender.get("sender_name") or sender.get("name")
+        sender_id_value = sender_id.get("open_id") or sender.get("open_id") or sender.get("id")
+        if sender_name and not sender_open_id and sender_display_name != sender_name:
             continue
-        if sender_open_id and sender_id.get("open_id") != sender_open_id:
+        if sender_open_id and sender_id_value != sender_open_id:
             continue
         try:
             created = int(message.get("create_time", 0))
@@ -304,11 +383,12 @@ def prepare_batch_directory(output_root: Path, timestamp: str, label: str) -> Pa
 def serialize_candidate(message: dict) -> dict:
     body = _as_dict(message.get("body"))
     sender = _as_dict(message.get("sender"))
+    content_payload = _parse_body_content(body)
     return {
         "message_id": message.get("message_id"),
-        "file_key": body.get("file_key"),
-        "file_name": body.get("file_name"),
-        "sender_name": sender.get("sender_name"),
+        "file_key": body.get("file_key") or content_payload.get("file_key"),
+        "file_name": body.get("file_name") or content_payload.get("file_name"),
+        "sender_name": sender.get("sender_name") or sender.get("name"),
         "create_time": message.get("create_time"),
     }
 
@@ -454,13 +534,13 @@ def run_download_files(args: argparse.Namespace) -> int:
 
     for message_id in requested_ids:
         message = by_message_id[message_id]
-        body = _as_dict(message.get("body"))
-        file_key = body.get("file_key")
+        candidate = serialize_candidate(message)
+        file_key = candidate.get("file_key")
         if not file_key:
             raise RuntimeError(f"Missing file_key for message: {message_id}")
-        file_name = str(body.get("file_name") or f"{message_id}.bin")
+        file_name = str(candidate.get("file_name") or f"{message_id}.bin")
         output_path = resolve_output_path(batch_dir, file_name, existing_names)
-        client.download_file(str(file_key), output_path)
+        client.download_file(str(file_key), output_path, message_id=message_id)
         existing_names.add(output_path.name)
         downloaded.append(
             {
