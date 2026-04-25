@@ -280,6 +280,8 @@ def require_settings(env: dict[str, str]) -> dict[str, str]:
 
 
 def make_batch_dir_name(timestamp: str, label: str) -> str:
+    if not label:
+        return f"{timestamp}-1"
     return f"{timestamp}-{label}"
 
 
@@ -368,10 +370,16 @@ def prepare_batch_directory(output_root: Path, timestamp: str, label: str) -> Pa
     base_name = make_batch_dir_name(timestamp, label)
     index = 1
     while True:
-        if index == 1:
+        if label:
+            if index == 1:
+                name = base_name
+            else:
+                name = f"{base_name}-{index}"
+        elif index == 1:
             name = base_name
         else:
-            name = f"{base_name}-{index}"
+            prefix, _, _ = base_name.rpartition("-")
+            name = f"{prefix}-{index}"
         target = output_root / name
         try:
             target.mkdir(parents=False, exist_ok=False)
@@ -528,7 +536,9 @@ def run_download_files(args: argparse.Namespace) -> int:
         raise RuntimeError(f"Message IDs not found in recent files: {joined}")
 
     output_root = Path(args.output_root)
-    batch_dir = prepare_batch_directory(output_root, time.strftime("%Y%m%d-%H%M%S"), "yang-files")
+    now = time.localtime()
+    batch_stamp = f"{now.tm_year}.{now.tm_mon}.{now.tm_mday}"
+    batch_dir = prepare_batch_directory(output_root, batch_stamp, "")
     downloaded: list[dict[str, str]] = []
     existing_names: set[str] = set()
 

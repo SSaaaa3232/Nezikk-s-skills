@@ -27,8 +27,8 @@ class FeishuYangCliHelperTests(unittest.TestCase):
             MODULE.require_settings({})
 
     def test_make_batch_dir_name_uses_timestamp_and_label(self) -> None:
-        value = MODULE.make_batch_dir_name("20260425-143522", "yang-files")
-        self.assertEqual(value, "20260425-143522-yang-files")
+        value = MODULE.make_batch_dir_name("2026.4.25", "1")
+        self.assertEqual(value, "2026.4.25-1")
 
     def test_resolve_duplicate_filename_appends_counter(self) -> None:
         output_dir = Path("/tmp/yang-downloads-test")
@@ -212,26 +212,26 @@ class FeishuYangCliHelperTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             output_root = Path(tmp)
             first = MODULE.prepare_batch_directory(
-                output_root, timestamp="20260425-150000", label="yang-files"
+                output_root, timestamp="2026.4.25", label=""
             )
             second = MODULE.prepare_batch_directory(
-                output_root, timestamp="20260425-150000", label="yang-files"
+                output_root, timestamp="2026.4.25", label=""
             )
             self.assertTrue(first.is_dir())
             self.assertTrue(second.is_dir())
-            self.assertEqual(first.name, "20260425-150000-yang-files")
-            self.assertEqual(second.name, "20260425-150000-yang-files-2")
+            self.assertEqual(first.name, "2026.4.25-1")
+            self.assertEqual(second.name, "2026.4.25-2")
 
     def test_prepare_batch_directory_retries_on_collisions(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             output_root = Path(tmp)
-            (output_root / "20260425-150000-yang-files").mkdir()
-            (output_root / "20260425-150000-yang-files-2").mkdir()
+            (output_root / "2026.4.25-1").mkdir()
+            (output_root / "2026.4.25-2").mkdir()
 
             created = MODULE.prepare_batch_directory(
-                output_root, timestamp="20260425-150000", label="yang-files"
+                output_root, timestamp="2026.4.25", label=""
             )
-            self.assertEqual(created.name, "20260425-150000-yang-files-3")
+            self.assertEqual(created.name, "2026.4.25-3")
             self.assertTrue(created.is_dir())
 
     def test_prepare_batch_directory_handles_racy_file_exists_error(self) -> None:
@@ -241,7 +241,7 @@ class FeishuYangCliHelperTests(unittest.TestCase):
             original_mkdir = Path.mkdir
 
             def flaky_mkdir(path_obj, *args, **kwargs):
-                if path_obj == output_root / "20260425-150000-yang-files":
+                if path_obj == output_root / "2026.4.25-1":
                     call_counter["value"] += 1
                     if call_counter["value"] == 1:
                         raise FileExistsError("simulated race")
@@ -249,9 +249,9 @@ class FeishuYangCliHelperTests(unittest.TestCase):
 
             with mock.patch.object(Path, "mkdir", autospec=True, side_effect=flaky_mkdir):
                 created = MODULE.prepare_batch_directory(
-                    output_root, timestamp="20260425-150000", label="yang-files"
+                    output_root, timestamp="2026.4.25", label=""
                 )
-            self.assertEqual(created.name, "20260425-150000-yang-files-2")
+            self.assertEqual(created.name, "2026.4.25-2")
             self.assertTrue(created.is_dir())
 
     def test_serialize_candidate_extracts_file_fields(self) -> None:
