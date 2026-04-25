@@ -70,12 +70,19 @@ def validate_feishu_response(response: dict, action: str) -> dict:
     return response
 
 
-def fetch_tenant_access_token(app_id: str, app_secret: str) -> str:
+def fetch_tenant_access_token(
+    app_id: str,
+    app_secret: str,
+    api_base: str = FEISHU_API_BASE,
+    timeout: int = DEFAULT_HTTP_TIMEOUT,
+) -> str:
+    normalized_api_base = api_base.rstrip("/")
     response = validate_feishu_response(
         send_json(
-            f"{FEISHU_API_BASE}/auth/v3/tenant_access_token/internal",
+            f"{normalized_api_base}/auth/v3/tenant_access_token/internal",
             {"app_id": app_id, "app_secret": app_secret},
             {},
+            timeout=timeout,
         ),
         action="fetch tenant access token",
     )
@@ -110,7 +117,12 @@ class FeishuClient:
     ):
         self.api_base = api_base.rstrip("/")
         self.timeout = timeout
-        self.tenant_access_token = fetch_tenant_access_token(app_id, app_secret)
+        self.tenant_access_token = fetch_tenant_access_token(
+            app_id,
+            app_secret,
+            api_base=self.api_base,
+            timeout=self.timeout,
+        )
 
     def _auth_headers(self) -> dict[str, str]:
         return {"Authorization": f"Bearer {self.tenant_access_token}"}

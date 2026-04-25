@@ -337,6 +337,43 @@ class FeishuYangCliHttpTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "invalid app credential"):
                 MODULE.fetch_tenant_access_token("bad_id", "bad_secret")
 
+    def test_fetch_tenant_access_token_uses_passed_api_base_and_timeout(self) -> None:
+        with mock.patch.object(
+            MODULE,
+            "send_json",
+            return_value={"code": 0, "tenant_access_token": "t-456"},
+        ) as mocked_send_json:
+            token = MODULE.fetch_tenant_access_token(
+                "cli_id",
+                "cli_secret",
+                api_base="https://feishu.internal/open-apis",
+                timeout=9,
+            )
+        self.assertEqual(token, "t-456")
+        args = mocked_send_json.call_args.args
+        kwargs = mocked_send_json.call_args.kwargs
+        self.assertEqual(
+            args[0],
+            "https://feishu.internal/open-apis/auth/v3/tenant_access_token/internal",
+        )
+        self.assertEqual(kwargs["timeout"], 9)
+
+    def test_feishu_client_constructor_uses_api_base_and_timeout_for_auth(self) -> None:
+        with mock.patch.object(MODULE, "fetch_tenant_access_token", return_value="tenant-token") as mocked_fetch:
+            client = MODULE.FeishuClient(
+                "app_id",
+                "app_secret",
+                api_base="https://sandbox.feishu.cn/open-apis",
+                timeout=17,
+            )
+        self.assertEqual(client.tenant_access_token, "tenant-token")
+        mocked_fetch.assert_called_once_with(
+            "app_id",
+            "app_secret",
+            api_base="https://sandbox.feishu.cn/open-apis",
+            timeout=17,
+        )
+
     def test_build_multipart_form_builds_form_data_for_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             file_path = Path(tmp) / "report.txt"
