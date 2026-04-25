@@ -17,6 +17,7 @@ REQUIRED_ENV_VARS = (
     "FEISHU_YANG_CHAT_ID",
 )
 FEISHU_API_BASE = "https://open.feishu.cn/open-apis"
+DEFAULT_HTTP_TIMEOUT = 30
 
 
 def request_json(
@@ -24,6 +25,7 @@ def request_json(
     method: str = "GET",
     payload: bytes | None = None,
     headers: dict[str, str] | None = None,
+    timeout: int = DEFAULT_HTTP_TIMEOUT,
 ) -> dict:
     request = urllib.request.Request(
         url=url,
@@ -31,7 +33,7 @@ def request_json(
         headers=headers or {},
         method=method.upper(),
     )
-    with urllib.request.urlopen(request) as response:
+    with urllib.request.urlopen(request, timeout=timeout) as response:
         raw = response.read()
     decoded = raw.decode("utf-8")
     data = json.loads(decoded)
@@ -40,18 +42,42 @@ def request_json(
     raise RuntimeError("Expected JSON object response")
 
 
-def send_json(url: str, payload: dict, headers: dict[str, str]) -> dict:
+def send_json(
+    url: str,
+    payload: dict,
+    headers: dict[str, str],
+    timeout: int = DEFAULT_HTTP_TIMEOUT,
+) -> dict:
     request_headers = {"Content-Type": "application/json; charset=utf-8"}
     request_headers.update(headers)
     body = json.dumps(payload, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
-    return request_json(url=url, method="POST", payload=body, headers=request_headers)
+    return request_json(
+        url=url,
+        method="POST",
+        payload=body,
+        headers=request_headers,
+        timeout=timeout,
+    )
+
+
+def validate_feishu_response(response: dict, action: str) -> dict:
+    code = response.get("code")
+    if code is None:
+        raise RuntimeError(f"{action} failed: missing Feishu response code")
+    if code != 0:
+        message = str(response.get("msg") or response.get("message") or "unknown error")
+        raise RuntimeError(f"{action} failed: code={code}, msg={message}")
+    return response
 
 
 def fetch_tenant_access_token(app_id: str, app_secret: str) -> str:
-    response = send_json(
-        f"{FEISHU_API_BASE}/auth/v3/tenant_access_token/internal",
-        {"app_id": app_id, "app_secret": app_secret},
-        {},
+    response = validate_feishu_response(
+        send_json(
+            f"{FEISHU_API_BASE}/auth/v3/tenant_access_token/internal",
+            {"app_id": app_id, "app_secret": app_secret},
+            {},
+        ),
+        action="fetch tenant access token",
     )
     token = response.get("tenant_access_token")
     if not token:
@@ -75,8 +101,15 @@ def build_multipart_form(field_name: str, file_path: Path | str) -> tuple[str, b
 
 
 class FeishuClient:
-    def __init__(self, app_id: str, app_secret: str, api_base: str = FEISHU_API_BASE):
+    def __init__(
+        self,
+        app_id: str,
+        app_secret: str,
+        api_base: str = FEISHU_API_BASE,
+        timeout: int = DEFAULT_HTTP_TIMEOUT,
+    ):
         self.api_base = api_base.rstrip("/")
+        self.timeout = timeout
         self.tenant_access_token = fetch_tenant_access_token(app_id, app_secret)
 
     def _auth_headers(self) -> dict[str, str]:
@@ -90,20 +123,42 @@ class FeishuClient:
         hours: int,
     ) -> list[dict]:
         min_created_ms = int((time.time() - (hours * 3600)) * 1000)
-        query = urllib.parse.urlencode({"container_id_type": "chat", "page_size": 50})
-        url = f"{self.api_base}/im/v1/chats/{chat_id}/messages?{query}"
-        response = request_json(url=url, method="GET", headers=self._auth_headers())
-        items = _as_dict(response.get("data")).get("items", [])
-        if not isinstance(items, list):
-            items = []
-        return filter_recent_file_messages(items, sender_name, sender_open_id, min_created_ms)
+        page_token = ""
+        all_items: list[dict] = []
+        while True:
+            params = {"container_id_type": "chat", "page_size": 50}
+            if page_token:
+                params["page_token"] = page_token
+            query = urllib.parse.urlencode(params)
+            url = f"{self.api_base}/im/v1/chats/{chat_id}/messages?{query}"
+            response = validate_feishu_response(
+                request_json(
+                    url=url,
+                    method="GET",
+                    headers=self._auth_headers(),
+                    timeout=self.timeout,
+                ),
+                action="list recent files",
+            )
+            data = _as_dict(response.get("data"))
+            items = data.get("items", [])
+            if isinstance(items, list):
+                all_items.extend(items)
+            has_more = bool(data.get("has_more"))
+            next_page_token = data.get("page_token")
+            if not has_more:
+                break
+            if not next_page_token:
+                break
+            page_token = str(next_page_token)
+        return filter_recent_file_messages(all_items, sender_name, sender_open_id, min_created_ms)
 
     def download_file(self, file_key: str, output_path: Path | str) -> Path:
         target_path = Path(output_path)
         target_path.parent.mkdir(parents=True, exist_ok=True)
         url = f"{self.api_base}/im/v1/files/{file_key}/download"
         request = urllib.request.Request(url=url, method="GET", headers=self._auth_headers())
-        with urllib.request.urlopen(request) as response:
+        with urllib.request.urlopen(request, timeout=self.timeout) as response:
             payload = response.read()
         target_path.write_bytes(payload)
         return target_path
@@ -118,7 +173,9 @@ class FeishuClient:
             method="POST",
             payload=body,
             headers=headers,
+            timeout=self.timeout,
         )
+        validate_feishu_response(response, action="upload file")
         file_key = _as_dict(response.get("data")).get("file_key")
         if not file_key:
             raise RuntimeError("file_key is missing in upload response")
@@ -130,10 +187,14 @@ class FeishuClient:
             "msg_type": "file",
             "content": json.dumps({"file_key": file_key}, separators=(",", ":")),
         }
-        return send_json(
-            f"{self.api_base}/im/v1/messages?receive_id_type=chat_id",
-            payload,
-            self._auth_headers(),
+        return validate_feishu_response(
+            send_json(
+                f"{self.api_base}/im/v1/messages?receive_id_type=chat_id",
+                payload,
+                self._auth_headers(),
+                timeout=self.timeout,
+            ),
+            action="send file message",
         )
 
 

@@ -1,6 +1,7 @@
 import importlib.util
 import tempfile
 import unittest
+import urllib.error
 from urllib import request as urllib_request
 from pathlib import Path
 from unittest import mock
@@ -286,6 +287,16 @@ class FeishuYangCliHttpTests(unittest.TestCase):
         self.assertEqual(sent_request.get_method(), "POST")
         self.assertEqual(sent_request.full_url, "https://example.test/open-apis/ping")
         self.assertEqual(sent_request.data, b'{"hello":"world"}')
+        self.assertEqual(mocked_open.call_args.kwargs["timeout"], 30)
+
+    def test_request_json_propagates_url_errors(self) -> None:
+        with mock.patch.object(
+            MODULE.urllib.request,
+            "urlopen",
+            side_effect=urllib.error.URLError("network down"),
+        ):
+            with self.assertRaises(urllib.error.URLError):
+                MODULE.request_json("https://example.test/open-apis/ping")
 
     def test_send_json_serializes_payload_and_calls_request_json(self) -> None:
         with mock.patch.object(MODULE, "request_json", return_value={"code": 0}) as mocked_request_json:
@@ -316,6 +327,15 @@ class FeishuYangCliHttpTests(unittest.TestCase):
         )
         self.assertEqual(args[1], {"app_id": "cli_id", "app_secret": "cli_secret"})
         self.assertEqual(args[2], {})
+
+    def test_fetch_tenant_access_token_raises_on_api_error_code(self) -> None:
+        with mock.patch.object(
+            MODULE,
+            "send_json",
+            return_value={"code": 99991663, "msg": "invalid app credential"},
+        ):
+            with self.assertRaisesRegex(RuntimeError, "invalid app credential"):
+                MODULE.fetch_tenant_access_token("bad_id", "bad_secret")
 
     def test_build_multipart_form_builds_form_data_for_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -375,6 +395,80 @@ class FeishuYangCliHttpTests(unittest.TestCase):
             request_kwargs["headers"]["Authorization"],
             "Bearer tenant-token",
         )
+
+    def test_feishu_client_list_recent_files_follows_pagination(self) -> None:
+        with mock.patch.object(MODULE, "fetch_tenant_access_token", return_value="tenant-token"):
+            client = MODULE.FeishuClient("app_id", "app_secret")
+        first_page = {
+            "code": 0,
+            "data": {
+                "items": [
+                    {
+                        "message_id": "m-1",
+                        "message_type": "file",
+                        "create_time": "1714000000100",
+                        "sender": {
+                            "sender_name": "Yang",
+                            "sender_id": {"open_id": "ou_yang"},
+                        },
+                        "body": {"file_key": "fk-1", "file_name": "ok.pdf"},
+                    }
+                ],
+                "has_more": True,
+                "page_token": "next_1",
+            },
+        }
+        second_page = {
+            "code": 0,
+            "data": {
+                "items": [
+                    {
+                        "message_id": "m-2",
+                        "message_type": "file",
+                        "create_time": "1714000000200",
+                        "sender": {
+                            "sender_name": "Yang",
+                            "sender_id": {"open_id": "ou_yang"},
+                        },
+                        "body": {"file_key": "fk-2", "file_name": "ok-2.pdf"},
+                    }
+                ],
+                "has_more": False,
+                "page_token": "",
+            },
+        }
+        with mock.patch.object(
+            MODULE,
+            "request_json",
+            side_effect=[first_page, second_page],
+        ) as mocked_request_json, mock.patch.object(MODULE.time, "time", return_value=1714000000.2):
+            items = client.list_recent_files(
+                chat_id="oc_test_chat",
+                sender_name="Yang",
+                sender_open_id="ou_yang",
+                hours=1,
+            )
+        self.assertEqual([item["message_id"] for item in items], ["m-1", "m-2"])
+        first_url = mocked_request_json.call_args_list[0].kwargs["url"]
+        second_url = mocked_request_json.call_args_list[1].kwargs["url"]
+        self.assertNotIn("page_token=", first_url)
+        self.assertIn("page_token=next_1", second_url)
+
+    def test_feishu_client_list_recent_files_raises_on_api_error(self) -> None:
+        with mock.patch.object(MODULE, "fetch_tenant_access_token", return_value="tenant-token"):
+            client = MODULE.FeishuClient("app_id", "app_secret")
+        with mock.patch.object(
+            MODULE,
+            "request_json",
+            return_value={"code": 10016, "msg": "permission denied"},
+        ):
+            with self.assertRaisesRegex(RuntimeError, "permission denied"):
+                client.list_recent_files(
+                    chat_id="oc_test_chat",
+                    sender_name="Yang",
+                    sender_open_id="ou_yang",
+                    hours=1,
+                )
 
     def test_feishu_client_download_file_writes_binary_to_path(self) -> None:
         with mock.patch.object(MODULE, "fetch_tenant_access_token", return_value="tenant-token"):
@@ -438,6 +532,17 @@ class FeishuYangCliHttpTests(unittest.TestCase):
             },
         )
         self.assertEqual(args[2]["Authorization"], "Bearer tenant-token")
+
+    def test_feishu_client_send_file_message_raises_on_api_error(self) -> None:
+        with mock.patch.object(MODULE, "fetch_tenant_access_token", return_value="tenant-token"):
+            client = MODULE.FeishuClient("app_id", "app_secret")
+        with mock.patch.object(
+            MODULE,
+            "send_json",
+            return_value={"code": 10016, "msg": "permission denied"},
+        ):
+            with self.assertRaisesRegex(RuntimeError, "permission denied"):
+                client.send_file_message("oc_chat_1", "file_key_1")
 
 
 if __name__ == "__main__":
