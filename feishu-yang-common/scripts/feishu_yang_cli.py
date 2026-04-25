@@ -28,7 +28,14 @@ def make_batch_dir_name(timestamp: str, label: str) -> str:
 
 def resolve_output_path(output_dir: Path, filename: str, existing_names: set[str]) -> Path:
     candidate = Path(filename).name
-    if candidate not in existing_names:
+
+    if candidate in {"", ".", ".."}:
+        raise ValueError(f"Invalid filename: {filename!r}")
+
+    def is_taken(name: str) -> bool:
+        return name in existing_names or (output_dir / name).exists()
+
+    if not is_taken(candidate):
         return output_dir / candidate
 
     source = Path(candidate)
@@ -37,7 +44,7 @@ def resolve_output_path(output_dir: Path, filename: str, existing_names: set[str
     index = 2
     while True:
         updated = f"{stem}-{index}{suffix}"
-        if updated not in existing_names:
+        if not is_taken(updated):
             return output_dir / updated
         index += 1
 

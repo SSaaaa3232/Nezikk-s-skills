@@ -1,4 +1,5 @@
 import importlib.util
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -27,6 +28,19 @@ class FeishuYangCliHelperTests(unittest.TestCase):
         second = MODULE.resolve_output_path(output_dir, "report.pdf", {first.name})
         self.assertEqual(first.name, "report.pdf")
         self.assertEqual(second.name, "report-2.pdf")
+
+    def test_resolve_output_path_rejects_invalid_special_filenames(self) -> None:
+        output_dir = Path("/tmp/yang-downloads-test")
+        for invalid in ("", ".", ".."):
+            with self.assertRaises(ValueError):
+                MODULE.resolve_output_path(output_dir, invalid, set())
+
+    def test_resolve_output_path_avoids_existing_file_on_disk(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output_dir = Path(tmp)
+            (output_dir / "report.pdf").write_text("existing", encoding="utf-8")
+            resolved = MODULE.resolve_output_path(output_dir, "report.pdf", set())
+            self.assertEqual(resolved.name, "report-2.pdf")
 
 
 if __name__ == "__main__":
