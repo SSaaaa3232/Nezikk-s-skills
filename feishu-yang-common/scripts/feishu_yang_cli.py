@@ -101,11 +101,27 @@ def build_multipart_form(field_name: str, file_path: Path | str) -> tuple[str, b
     filename = source_path.name
     file_bytes = source_path.read_bytes()
     boundary = f"----feishu-yang-{uuid.uuid4().hex}"
-    body = (
-        f"--{boundary}\r\n"
-        f'Content-Disposition: form-data; name="{field_name}"; filename="{filename}"\r\n'
-        "Content-Type: application/octet-stream\r\n\r\n"
-    ).encode("utf-8") + file_bytes + f"\r\n--{boundary}--\r\n".encode("utf-8")
+    parts = [
+        (
+            f"--{boundary}\r\n"
+            'Content-Disposition: form-data; name="file_type"\r\n\r\n'
+            "stream\r\n"
+        ).encode("utf-8"),
+        (
+            f"--{boundary}\r\n"
+            'Content-Disposition: form-data; name="file_name"\r\n\r\n'
+            f"{filename}\r\n"
+        ).encode("utf-8"),
+        (
+            f"--{boundary}\r\n"
+            f'Content-Disposition: form-data; name="{field_name}"; filename="{filename}"\r\n'
+            "Content-Type: application/octet-stream\r\n\r\n"
+        ).encode("utf-8")
+        + file_bytes
+        + b"\r\n",
+        f"--{boundary}--\r\n".encode("utf-8"),
+    ]
+    body = b"".join(parts)
     return f"multipart/form-data; boundary={boundary}", body
 
 
