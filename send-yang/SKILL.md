@@ -11,6 +11,7 @@ Use the shared CLI to upload a local file and send it to the configured Yang cha
 
 CLI path:
 - `feishu-yang-common/scripts/feishu_yang_cli.py`
+- Keep the sibling folder `feishu-yang-common/` installed with this skill.
 
 ## Workflow
 

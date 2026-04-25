@@ -11,6 +11,7 @@ Use the shared CLI script to find recent Yang file messages, confirm user select
 
 CLI path:
 - `feishu-yang-common/scripts/feishu_yang_cli.py`
+- Keep the sibling folder `feishu-yang-common/` installed with this skill.
 
 ## Workflow
 
@@ -25,7 +26,7 @@ CLI path:
 - Confirm the resolved message IDs before downloading.
 
 4. Download only confirmed message IDs:
-- `python3 feishu-yang-common/scripts/feishu_yang_cli.py download-files --message-id <id1> --message-id <id2>`
+- `python3 feishu-yang-common/scripts/feishu_yang_cli.py download-files --hours <N> --message-id <id1> --message-id <id2>`
 
 5. Report downloaded paths from CLI output.
 

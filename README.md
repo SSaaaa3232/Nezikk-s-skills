@@ -64,7 +64,7 @@ Path: `feishu-yang-common/scripts/feishu_yang_cli.py`
 
 Commands:
 - `list-recent-files` (supports `--json`)
-- `download-files` (accepts repeated `--message-id`)
+- `download-files` (accepts repeated `--message-id`, supports `--hours`)
 - `send-file` (requires `--path`)
 
 Environment variables:
@@ -113,4 +113,8 @@ cp -R download-yang ~/.claude/skills/
 cp -R download-yang ~/.agents/skills/
 cp -R send-yang ~/.claude/skills/
 cp -R send-yang ~/.agents/skills/
+cp -R feishu-yang-common ~/.claude/skills/
+cp -R feishu-yang-common ~/.agents/skills/
 ```
+
+`download-yang` and `send-yang` depend on `feishu-yang-common/scripts/feishu_yang_cli.py`, so install/copy `feishu-yang-common` together with those two skills.

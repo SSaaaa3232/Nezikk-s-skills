@@ -346,6 +346,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     download_parser = subparsers.add_parser("download-files")
     download_parser.add_argument("--message-id", action="append", dest="message_ids", default=[])
+    download_parser.add_argument("--hours", type=int, default=24)
     download_parser.add_argument(
         "--output-root", default=str(Path.home() / "Desktop" / "yang-downloads")
     )
@@ -409,10 +410,10 @@ def run_list_recent_files(args: argparse.Namespace) -> int:
 def run_send_file(args: argparse.Namespace) -> int:
     if not args.path:
         raise RuntimeError("send-file requires --path")
-    settings = load_runtime_settings(dict(os.environ))
     source_path = Path(args.path)
     if not source_path.is_file():
         raise RuntimeError(f"File not found: {source_path}")
+    settings = load_runtime_settings(dict(os.environ))
     client = build_client_from_settings(settings)
     file_key = client.upload_file(source_path)
     response = client.send_file_message(settings["FEISHU_YANG_CHAT_ID"], file_key)
@@ -434,7 +435,7 @@ def run_download_files(args: argparse.Namespace) -> int:
         chat_id=settings["FEISHU_YANG_CHAT_ID"],
         sender_name=settings["FEISHU_YANG_SENDER_NAME"],
         sender_open_id=settings["FEISHU_YANG_SENDER_OPEN_ID"],
-        hours=24,
+        hours=args.hours,
     )
     by_message_id = {
         str(message.get("message_id")): message

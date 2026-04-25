@@ -1,3 +1,4 @@
+import argparse
 import importlib.util
 import io
 import json
@@ -605,7 +606,7 @@ class FeishuYangCliCommandTests(unittest.TestCase):
         mocked_handler.assert_called_once()
 
     def test_main_dispatches_download_files_command(self) -> None:
-        argv = ["feishu_yang_cli", "download-files", "--message-id", "om_1"]
+        argv = ["feishu_yang_cli", "download-files", "--message-id", "om_1", "--hours", "48"]
         with mock.patch.object(sys, "argv", argv), mock.patch.object(
             MODULE, "run_download_files", return_value=0, create=True
         ) as mocked_handler:
@@ -658,6 +659,131 @@ class FeishuYangCliCommandTests(unittest.TestCase):
             sender_open_id="ou_yang",
             hours=12,
         )
+
+    def test_build_client_from_settings_rejects_non_integer_timeout(self) -> None:
+        settings = {
+            "FEISHU_APP_ID": "app_id",
+            "FEISHU_APP_SECRET": "app_secret",
+            "FEISHU_YANG_CHAT_ID": "oc_chat",
+            "FEISHU_HTTP_TIMEOUT": "abc",
+        }
+        with mock.patch.object(MODULE, "FeishuClient") as mocked_client_cls:
+            with self.assertRaisesRegex(RuntimeError, "must be an integer"):
+                MODULE.build_client_from_settings(settings)
+        mocked_client_cls.assert_not_called()
+
+    def test_build_client_from_settings_rejects_non_positive_timeout(self) -> None:
+        settings = {
+            "FEISHU_APP_ID": "app_id",
+            "FEISHU_APP_SECRET": "app_secret",
+            "FEISHU_YANG_CHAT_ID": "oc_chat",
+            "FEISHU_HTTP_TIMEOUT": "0",
+        }
+        with mock.patch.object(MODULE, "FeishuClient") as mocked_client_cls:
+            with self.assertRaisesRegex(RuntimeError, "must be > 0"):
+                MODULE.build_client_from_settings(settings)
+        mocked_client_cls.assert_not_called()
+
+    def test_run_send_file_raises_when_file_missing(self) -> None:
+        args = argparse.Namespace(path="/path/does/not/exist.pdf")
+        with self.assertRaisesRegex(RuntimeError, "File not found"):
+            MODULE.run_send_file(args)
+
+    def test_run_send_file_propagates_runtime_error_from_client(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source_path = Path(tmp) / "input.pdf"
+            source_path.write_bytes(b"data")
+            args = argparse.Namespace(path=str(source_path))
+            settings = {
+                "FEISHU_APP_ID": "app_id",
+                "FEISHU_APP_SECRET": "app_secret",
+                "FEISHU_YANG_CHAT_ID": "oc_chat",
+                "FEISHU_YANG_SENDER_NAME": "",
+                "FEISHU_YANG_SENDER_OPEN_ID": "",
+                "FEISHU_API_BASE": "",
+                "FEISHU_HTTP_TIMEOUT": "",
+            }
+            with mock.patch.object(MODULE, "load_runtime_settings", return_value=settings), mock.patch.object(
+                MODULE, "build_client_from_settings"
+            ) as mocked_builder:
+                mocked_client = mocked_builder.return_value
+                mocked_client.upload_file.side_effect = RuntimeError("upload failed")
+                with self.assertRaisesRegex(RuntimeError, "upload failed"):
+                    MODULE.run_send_file(args)
+
+    def test_run_download_files_success_uses_hours_and_downloads_message_ids(self) -> None:
+        args = argparse.Namespace(
+            message_ids=["om_1", "om_2"],
+            output_root="/tmp/yang-downloads",
+            hours=72,
+        )
+        settings = {
+            "FEISHU_APP_ID": "app_id",
+            "FEISHU_APP_SECRET": "app_secret",
+            "FEISHU_YANG_CHAT_ID": "oc_chat",
+            "FEISHU_YANG_SENDER_NAME": "Yang",
+            "FEISHU_YANG_SENDER_OPEN_ID": "ou_yang",
+            "FEISHU_API_BASE": "",
+            "FEISHU_HTTP_TIMEOUT": "",
+        }
+        recent_messages = [
+            {
+                "message_id": "om_1",
+                "body": {"file_key": "fk_1", "file_name": "a.pdf"},
+            },
+            {
+                "message_id": "om_2",
+                "body": {"file_key": "fk_2", "file_name": "b.pdf"},
+            },
+        ]
+
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(
+            MODULE, "load_runtime_settings", return_value=settings
+        ), mock.patch.object(MODULE, "build_client_from_settings") as mocked_builder, mock.patch.object(
+            MODULE, "prepare_batch_directory", return_value=Path(tmp) / "batch"
+        ) as mocked_batch, mock.patch(
+            "sys.stdout", new_callable=io.StringIO
+        ) as stdout:
+            batch_dir = Path(tmp) / "batch"
+            batch_dir.mkdir(parents=True, exist_ok=True)
+            mocked_client = mocked_builder.return_value
+            mocked_client.list_recent_files.return_value = recent_messages
+            result = MODULE.run_download_files(args)
+
+        self.assertEqual(result, 0)
+        mocked_client.list_recent_files.assert_called_once_with(
+            chat_id="oc_chat",
+            sender_name="Yang",
+            sender_open_id="ou_yang",
+            hours=72,
+        )
+        mocked_batch.assert_called_once()
+        self.assertEqual(mocked_client.download_file.call_count, 2)
+        self.assertIn('"message_id": "om_1"', stdout.getvalue())
+        self.assertIn('"message_id": "om_2"', stdout.getvalue())
+
+    def test_run_download_files_raises_when_message_id_not_in_recent_files(self) -> None:
+        args = argparse.Namespace(
+            message_ids=["om_missing"],
+            output_root="/tmp/yang-downloads",
+            hours=24,
+        )
+        settings = {
+            "FEISHU_APP_ID": "app_id",
+            "FEISHU_APP_SECRET": "app_secret",
+            "FEISHU_YANG_CHAT_ID": "oc_chat",
+            "FEISHU_YANG_SENDER_NAME": "Yang",
+            "FEISHU_YANG_SENDER_OPEN_ID": "ou_yang",
+            "FEISHU_API_BASE": "",
+            "FEISHU_HTTP_TIMEOUT": "",
+        }
+        with mock.patch.object(MODULE, "load_runtime_settings", return_value=settings), mock.patch.object(
+            MODULE, "build_client_from_settings"
+        ) as mocked_builder:
+            mocked_client = mocked_builder.return_value
+            mocked_client.list_recent_files.return_value = []
+            with self.assertRaisesRegex(RuntimeError, "Message IDs not found"):
+                MODULE.run_download_files(args)
 
 
 if __name__ == "__main__":
