@@ -79,6 +79,12 @@ Nezikk-s-skills/
 
 外部 skill 统一放在 [`external/`](./external/)，并在来源目录中保留 `SOURCE.md`。
 
+| 名字 | 来源 | 文件 |
+|---|---|---|
+| 🧹 [**neat-freak**](./external/KKKKhazix/khazix-skills/neat-freak/SKILL.md) | [KKKKhazix/khazix-skills](https://github.com/KKKKhazix/khazix-skills) | [SOURCE.md](./external/KKKKhazix/khazix-skills/SOURCE.md) |
+| 🔭 [**hv-analysis**](./external/KKKKhazix/khazix-skills/hv-analysis/SKILL.md) | [KKKKhazix/khazix-skills](https://github.com/KKKKhazix/khazix-skills) | [SOURCE.md](./external/KKKKhazix/khazix-skills/SOURCE.md) |
+| ✍️ [**khazix-writer**](./external/KKKKhazix/khazix-skills/khazix-writer/SKILL.md) | [KKKKhazix/khazix-skills](https://github.com/KKKKhazix/khazix-skills) | [SOURCE.md](./external/KKKKhazix/khazix-skills/SOURCE.md) |
+
 ---
 
 ## 📦 安装方式

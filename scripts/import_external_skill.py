@@ -129,7 +129,7 @@ def write_source_metadata(
     repo_name: str,
     commit: str,
     license_name: str,
-    skill_name: str,
+    imported_skills: list[str],
 ) -> None:
     imported_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     source_path.write_text(
@@ -143,7 +143,7 @@ def write_source_metadata(
                 f"Imported at: {imported_at}",
                 f"Imported commit: {commit}",
                 f"License: {license_name}",
-                f"Imported skill: {skill_name}",
+                f"Imported skills: {', '.join(imported_skills)}",
                 "Local changes: none",
                 "Notes:",
                 "",
@@ -180,6 +180,9 @@ def import_from_clone(
         target_dir,
         ignore=shutil.ignore_patterns(".git", "__pycache__", ".DS_Store"),
     )
+    imported_skills = sorted(
+        path.name for path in external_repo_dir.iterdir() if (path / "SKILL.md").is_file()
+    )
 
     write_source_metadata(
         external_repo_dir / "SOURCE.md",
@@ -188,7 +191,7 @@ def import_from_clone(
         repo_name=repo_name,
         commit=commit,
         license_name=detect_license(clone_dir),
-        skill_name=skill_name,
+        imported_skills=imported_skills,
     )
     return target_dir
 

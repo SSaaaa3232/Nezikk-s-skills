@@ -109,6 +109,7 @@ class ImportExternalSkillTests(unittest.TestCase):
             source = (imported / "SOURCE.md").read_text(encoding="utf-8")
             self.assertIn("Original repository: https://github.com/op7418/guizang-ppt-skill", source)
             self.assertIn("Imported commit: abc1234", source)
+            self.assertIn("Imported skills: guizang-ppt-skill", source)
             self.assertIn("Local changes: none", source)
 
 
