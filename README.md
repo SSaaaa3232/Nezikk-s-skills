@@ -6,6 +6,18 @@ This repo stores reusable skills that can be copied into local skill directories
 
 ## Skills
 
+### `nskill`
+
+Path: `nskill/`
+
+Purpose:
+- support `/nskill <name>` as a command-style trigger
+- create a same-named skill folder in this repository
+- verify the new folder and publish it with `git commit` and `git push`
+
+Key files:
+- `nskill/SKILL.md`
+
 ### `synbio-academic-translator`
 
 Path: `synbio-academic-translator/`
@@ -74,6 +86,7 @@ Environment variables:
 ## Tests
 
 Current test coverage:
+- `tests/test_nskill_skill.py`
 - `tests/test_extract_docx_paragraphs.py`
 - `tests/test_feishu_yang_cli.py`
 
@@ -107,6 +120,8 @@ Example:
 ```bash
 cp -R synbio-academic-translator ~/.claude/skills/
 cp -R synbio-academic-translator ~/.agents/skills/
+cp -R nskill ~/.claude/skills/
+cp -R nskill ~/.agents/skills/
 cp -R docx-creater ~/.claude/skills/
 cp -R docx-creater ~/.agents/skills/
 cp -R feishu-yang/download-yang ~/.claude/skills/
