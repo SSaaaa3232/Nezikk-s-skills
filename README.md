@@ -21,10 +21,48 @@
 - **Skills** — Agent 能直接加载的结构化指令集，遵循 [Agent Skills](https://agentskills.io) 开放标准
 - **Automation** — 有些 skill 会调用仓库里的脚本或 CLI，把固定流程跑完整
 - **Personal Workflow** — 以我本地的 Claude Code / Codex 使用习惯为主，开源出来方便复用和改造
+- **Single Source** — Claude 和 Codex 可以各自保留入口目录，但软链接到这个仓库里的同一份 `SKILL.md`
+
+---
+
+## 🗂️ 仓库分层
+
+这个仓库会同时管理两类 skill：
+
+```text
+Nezikk-s-skills/
+  nskill/                         # 我自己写的 skill
+  git-create/
+  justdo/
+  docx-creater/
+  synbio-academic-translator/
+  feishu-yang/
+
+  external/                       # 从别人仓库下载或 fork 的 skill
+    <github-owner>/
+      <repo-name>/
+        SOURCE.md                 # 来源、commit、license、本地修改记录
+        <skill-name>/
+          SKILL.md
+
+  scripts/
+    link-skill.sh                 # 同时链接到 Claude 和 Codex
+```
+
+核心规则：
+
+- 自己写的 skill 放在仓库根目录，方便作为主展示内容维护
+- 别人的 skill 放进 `external/<github-owner>/<repo-name>/`
+- 每个外部来源仓库必须带 `SOURCE.md`，标注原始仓库、导入 commit、license 和本地修改情况
+- Claude 和 Codex 各自保留默认 skill 目录，但目录项用软链接指向本仓库里的同一份 skill
+
+这样修改一次 `SKILL.md`，Claude 和 Codex 读到的就是同一份内容。
 
 ---
 
 ## 📋 目录
+
+### My Skills
 
 | 名字 | 一句话 | 文件 |
 |---|---|---|
@@ -36,40 +74,46 @@
 | 📥 [**download-yang**](#-download-yang) | 从杨的飞书消息里列出近期文件，确认后下载 | [SKILL.md](./feishu-yang/download-yang/SKILL.md) |
 | 📤 [**send-yang**](#-send-yang) | 把本地文件上传并发送到杨的飞书会话 | [SKILL.md](./feishu-yang/send-yang/SKILL.md) |
 
+### External Skills
+
+外部 skill 统一放在 [`external/`](./external/)，并在来源目录中保留 `SOURCE.md`。
+
 ---
 
 ## 📦 安装方式
 
-如果你使用支持 Skill 的 Agent，可以直接让它安装这个仓库里的某个 skill：
+推荐方式是把这个仓库作为唯一真实存储位置，然后把同一个 skill 同时软链接到 Codex 和 Claude：
+
+```bash
+./scripts/link-skill.sh nskill
+./scripts/link-skill.sh synbio-academic-translator
+```
+
+脚本会创建：
 
 ```text
-帮我安装这个 skill：https://github.com/SSaaaa3232/Nezikk-s-skills/tree/main/<skill-name>
+~/.agents/skills/<skill-name> -> /Users/saaaaa/Desktop/Nezikk-s-skills/<skill-name>
+~/.claude/skills/<skill-name> -> /Users/saaaaa/Desktop/Nezikk-s-skills/<skill-name>
 ```
 
-把 `<skill-name>` 换成你想安装的目录名，比如 `nskill`、`git-create`、`synbio-academic-translator`。
-
-也可以手动复制到本地 skill 目录：
+外部 skill 也一样：
 
 ```bash
-cp -R nskill ~/.agents/skills/
-cp -R git-create ~/.agents/skills/
-cp -R justdo ~/.agents/skills/
-cp -R synbio-academic-translator ~/.agents/skills/
-cp -R docx-creater ~/.agents/skills/
+./scripts/link-skill.sh external/KKKKhazix/khazix-skills/neat-freak
 ```
 
-Claude Code 常用目录：
+如果要手动软链接：
 
 ```bash
-cp -R nskill ~/.claude/skills/
+ln -s "/Users/saaaaa/Desktop/Nezikk-s-skills/nskill" "$HOME/.agents/skills/nskill"
+ln -s "/Users/saaaaa/Desktop/Nezikk-s-skills/nskill" "$HOME/.claude/skills/nskill"
 ```
 
 `download-yang` 和 `send-yang` 依赖共享 CLI，需要和 `feishu-yang/feishu-yang-automation` 一起复制：
 
 ```bash
-cp -R feishu-yang/download-yang ~/.agents/skills/
-cp -R feishu-yang/send-yang ~/.agents/skills/
-cp -R feishu-yang/feishu-yang-automation ~/.agents/skills/
+./scripts/link-skill.sh feishu-yang/download-yang
+./scripts/link-skill.sh feishu-yang/send-yang
 ```
 
 ---
@@ -301,6 +345,8 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 这是我的个人 AI skill 仓库。它不追求做成通用平台，更像是把我每天真的会用到的固定动作整理成可复用的工具。
 
 如果你要直接用，建议先读对应的 `SKILL.md`，尤其是带本地路径、飞书环境变量、GitHub CLI 的 skill。很多规则是按我的本机工作流写的，你可以 fork 后改成自己的路径和习惯。
+
+外部 skill 会保留原始来源记录；如果我做了本地修改，也会写在对应的 `SOURCE.md` 里，避免混淆原作者版本和本仓库版本。
 
 ---
 
