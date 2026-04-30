@@ -5,7 +5,7 @@
 #### 我自己常用的一些 AI 技能，都放在这里
 
 [![License](https://img.shields.io/badge/License-MIT-3B82F6?style=for-the-badge)](./LICENSE)
-[![Skills](https://img.shields.io/badge/Skills-7-10B981?style=for-the-badge)](#-skills)
+[![Skills](https://img.shields.io/badge/Skills-8-10B981?style=for-the-badge)](#-skills)
 [![Tests](https://img.shields.io/badge/Tests-unittest-F59E0B?style=for-the-badge)](#-测试)
 [![AgentSkills](https://img.shields.io/badge/AgentSkills-Standard-8B5CF6?style=for-the-badge)](https://agentskills.io)
 
@@ -67,6 +67,7 @@ Nezikk-s-skills/
 | 名字 | 一句话 | 文件 |
 |---|---|---|
 | 🧩 [**nskill**](#-nskill) | 输入 `/nskill <name>`，自动创建同名 skill 文件夹并发布到这个仓库 | [SKILL.md](./nskill/SKILL.md) |
+| 📦 [**skill-down**](#-skill-down) | 输入 `/skill-down npx skills add ... --skill ...`，把外部 skill 导入本仓库并同步到 Claude/Codex | [SKILL.md](./skill-down/SKILL.md) |
 | 🐙 [**git-create**](#-git-create) | 输入 `/git-create`，把本地项目接到一个新的 GitHub 仓库 | [SKILL.md](./git-create/SKILL.md) |
 | 📁 [**justdo**](#-justdo) | 输入 `/justdo <文件夹名字>`，在桌面项目目录下创建新文件夹 | [SKILL.md](./justdo/SKILL.md) |
 | 🧬 [**synbio-academic-translator**](#-synbio-academic-translator) | 面向合成生物学论文的中英翻译、润色和术语统一 | [SKILL.md](./synbio-academic-translator/SKILL.md) |
@@ -146,6 +147,40 @@ ln -s "/Users/saaaaa/Desktop/Nezikk-s-skills/nskill" "$HOME/.claude/skills/nskil
 - `git commit` 后推送到远端
 
 → [SKILL.md](./nskill/SKILL.md)
+
+</td></tr>
+</table>
+
+<table>
+<tr><td>
+
+### 📦 skill-down
+
+> *"别人仓库里的 skill 不直接散装到各个 CLI，而是先进入我的仓库，标注来源，再统一软链接出去。"*
+
+输入 `/skill-down` 后面接一段 `npx skills add ... --skill ...` 命令，它会把外部 skill 导入这个仓库的 `external/` 分层目录，并同步给 Claude 和 Codex。
+
+**适合**
+
+- 下载别人开源的 skill，但想统一放进自己的 Git 仓库管理
+- 保留原始仓库、导入 commit、license 和本地修改记录
+- 避免 Claude 和 Codex 各自复制一份，导致以后内容分叉
+
+**典型用法**
+
+```bash
+/skill-down npx skills add https://github.com/op7418/guizang-ppt-skill --skill guizang-ppt-skill
+```
+
+**它会做什么**
+
+- clone 外部 GitHub 仓库
+- 找到指定 skill 的 `SKILL.md`
+- 保存到 `external/<github-owner>/<repo-name>/<skill-name>/`
+- 自动生成 `SOURCE.md`
+- 软链接到 `~/.agents/skills/` 和 `~/.claude/skills/`
+
+→ [SKILL.md](./skill-down/SKILL.md) · [import_external_skill.py](./scripts/import_external_skill.py)
 
 </td></tr>
 </table>
