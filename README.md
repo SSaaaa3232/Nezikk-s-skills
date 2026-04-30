@@ -18,6 +18,18 @@ Purpose:
 Key files:
 - `nskill/SKILL.md`
 
+### `git-create`
+
+Path: `git-create/`
+
+Purpose:
+- support `/git-create` as a command-style trigger
+- confirm the local project folder and GitHub repository name
+- create a private GitHub repository with `gh` and connect the local folder as its Git repository
+
+Key files:
+- `git-create/SKILL.md`
+
 ### `synbio-academic-translator`
 
 Path: `synbio-academic-translator/`
