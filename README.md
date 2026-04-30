@@ -30,6 +30,18 @@ Purpose:
 Key files:
 - `git-create/SKILL.md`
 
+### `justdo`
+
+Path: `justdo/`
+
+Purpose:
+- support `/justdo <文件夹名字>` as a command-style trigger
+- create the requested folder under `/Users/saaaaa/Desktop/项目`
+- avoid overwriting existing project folders
+
+Key files:
+- `justdo/SKILL.md`
+
 ### `synbio-academic-translator`
 
 Path: `synbio-academic-translator/`
