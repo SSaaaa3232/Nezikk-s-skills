@@ -1,0 +1,5 @@
+{
+  "user_id": "claude-code-default",
+  "mem_cube_id": null,
+  "memos_api": "http://localhost:8000"
+}

@@ -103,6 +103,19 @@ Nezikk-s-skills/
 ./scripts/link-skill.sh external/KKKKhazix/khazix-skills/neat-freak
 ```
 
+如果要把当前 Claude / Codex 里已经安装的非系统 skill 全部收进本仓库，并把两个入口目录改成软链接：
+
+```bash
+python3 scripts/sync_installed_skills.py        # dry-run
+python3 scripts/sync_installed_skills.py --apply
+```
+
+脚本会跳过 Codex 系统内置的 `~/.codex/skills/.system/`，把同步前的入口备份到：
+
+```text
+/Users/saaaaa/Desktop/Nezikk-s-skills-entry-backups/
+```
+
 如果要手动软链接：
 
 ```bash

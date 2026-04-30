@@ -1,0 +1,7 @@
+interface:
+  display_name: "SynBio Academic Translator"
+  short_description: "Translate and polish bioscience papers with normalized terminology."
+  default_prompt: "Use $synbio-academic-translator to translate this Chinese synthetic biology manuscript passage into polished academic English."
+
+policy:
+  allow_implicit_invocation: true
