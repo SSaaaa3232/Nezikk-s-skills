@@ -23,8 +23,8 @@ class NSkillSkillTests(unittest.TestCase):
     def test_readme_lists_nskill(self) -> None:
         content = README_PATH.read_text(encoding="utf-8")
 
-        self.assertIn("### `nskill`", content)
-        self.assertIn("Path: `nskill/`", content)
+        self.assertIn("### 🧩 nskill", content)
+        self.assertIn("[SKILL.md](./nskill/SKILL.md)", content)
 
 
 if __name__ == "__main__":
