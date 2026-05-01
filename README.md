@@ -5,7 +5,7 @@
 #### 我自己常用的一些 AI 技能，都放在这里
 
 [![License](https://img.shields.io/badge/License-MIT-3B82F6?style=for-the-badge)](./LICENSE)
-[![Skills](https://img.shields.io/badge/Skills-8-10B981?style=for-the-badge)](#-skills)
+[![Skills](https://img.shields.io/badge/Skills-9-10B981?style=for-the-badge)](#-skills)
 [![Tests](https://img.shields.io/badge/Tests-unittest-F59E0B?style=for-the-badge)](#-测试)
 [![AgentSkills](https://img.shields.io/badge/AgentSkills-Standard-8B5CF6?style=for-the-badge)](https://agentskills.io)
 
@@ -68,6 +68,7 @@ Nezikk-s-skills/
 |---|---|---|
 | 🧩 [**nskill**](#-nskill) | 输入 `/nskill <name>`，自动创建同名 skill 文件夹并发布到这个仓库 | [SKILL.md](./nskill/SKILL.md) |
 | 📦 [**skill-down**](#-skill-down) | 输入 `/skill-down npx skills add ... --skill ...`，把外部 skill 导入本仓库并同步到 Claude/Codex | [SKILL.md](./skill-down/SKILL.md) |
+| 🗒️ [**obsidian**](#-obsidian) | 输入 `/obsidian <X链接>`，用 bb-browser 登录态和 Obsidian Web Clipper 保存文章到本地 vault | [SKILL.md](./obsidian/SKILL.md) |
 | 🐙 [**git-create**](#-git-create) | 输入 `/git-create`，把本地项目接到一个新的 GitHub 仓库 | [SKILL.md](./git-create/SKILL.md) |
 | 📁 [**justdo**](#-justdo) | 输入 `/justdo <文件夹名字>`，在桌面项目目录下创建新文件夹 | [SKILL.md](./justdo/SKILL.md) |
 | 🧬 [**synbio-academic-translator**](#-synbio-academic-translator) | 面向合成生物学论文的中英翻译、润色和术语统一 | [SKILL.md](./synbio-academic-translator/SKILL.md) |
@@ -200,6 +201,32 @@ ln -s "/Users/saaaaa/Desktop/Nezikk-s-skills/nskill" "$HOME/.claude/skills/nskil
 - 软链接到 `~/.agents/skills/` 和 `~/.claude/skills/`
 
 → [SKILL.md](./skill-down/SKILL.md) · [import_external_skill.py](./scripts/import_external_skill.py)
+
+</td></tr>
+</table>
+
+<table>
+<tr><td>
+
+### 🗒️ obsidian
+
+> *"看到值得保存的 X 链接，直接用已登录浏览器和 Obsidian Web Clipper 收进本地库。"*
+
+输入 `/obsidian <链接>` 后，它会用 `bb-browser` 复用你的本地登录态打开页面，再通过 Obsidian Web Clipper 保存到本地 vault。
+
+**适合**
+
+- 保存 X/Twitter 链接或文章链接到 Obsidian
+- 页面需要登录态才能完整读取
+- 想避免复制粘贴和手动整理标题、正文
+
+**安全规则**
+
+- 只打开和剪藏，不点赞、不回复、不关注、不发帖
+- `bb-browser` 不可用时停止，不切到未登录浏览器
+- Web Clipper 不可用时停止并提示配置
+
+→ [SKILL.md](./obsidian/SKILL.md)
 
 </td></tr>
 </table>
