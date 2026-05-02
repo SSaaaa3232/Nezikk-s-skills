@@ -1,6 +1,6 @@
 ---
 name: obsidian
-description: Use when the user enters /obsidian followed by an X/Twitter article link, to open the link with bb-browser using the user's logged-in browser state and save it into the local Obsidian vault with Obsidian Web Clipper.
+description: Use when the user enters /obsidian followed by an X/Twitter article link, to open the link with bb-browser using the user's logged-in browser state and save it into the local Obsidian vault folder raw/articles with Obsidian Web Clipper.
 ---
 
 # Obsidian
@@ -15,7 +15,11 @@ Example:
 
 ## Goal
 
-Open the URL with `bb-browser` using the user's existing logged-in browser state, invoke Obsidian Web Clipper, and save the clipped article/page into the user's local Obsidian vault.
+Open the URL with `bb-browser` using the user's existing logged-in browser state, invoke Obsidian Web Clipper, and save the clipped article/page into this local Obsidian folder:
+
+```text
+/Users/saaaaa/Obsidian-Template/raw/articles
+```
 
 ## Workflow
 
@@ -37,10 +41,17 @@ Open the URL with `bb-browser` using the user's existing logged-in browser state
 4. Trigger Obsidian Web Clipper.
    - Prefer the installed Obsidian Web Clipper extension button or configured browser action.
    - Confirm the clipper preview contains the expected page title/content.
-   - Save into the default local Obsidian vault unless the user specifies a different vault or folder.
+   - Save into `raw/articles` in the local vault.
+   - If the clipper asks for a vault, use `Obsidian-Template`.
+   - If the clipper asks for a folder/path, use `raw/articles`.
+   - The expected Obsidian Web Clipper settings are:
+     - Vault: `Obsidian-Template`
+     - Note location: `raw/articles`
+     - Save behavior: `Add to Obsidian`
 
 5. Verify the save.
    - Confirm the clipper reports success, or verify a new/updated Markdown file appears in the local Obsidian vault.
+   - Verify the saved file is under `/Users/saaaaa/Obsidian-Template/raw/articles`.
    - If possible, report the saved note path.
 
 6. Report the result.
@@ -53,9 +64,11 @@ Open the URL with `bb-browser` using the user's existing logged-in browser state
 - Do not post, like, reply, follow, or otherwise interact with X/Twitter content.
 - Do not scrape private content into Obsidian unless the user explicitly gave that link and requested clipping.
 - Do not use unauthenticated fetch/curl as a replacement for `bb-browser` when the page needs the user's logged-in state.
-- Do not guess the vault path if Obsidian Web Clipper asks the user to choose a vault; ask the user to confirm.
+- Do not save outside `/Users/saaaaa/Obsidian-Template/raw/articles` unless the user explicitly asks for another folder.
 
 ## Fallbacks
+
+If Obsidian Web Clipper generated the Markdown content but Chrome does not hand off the `obsidian://` URL to Obsidian, open the same Obsidian URI with the system `open` command. This is allowed because the content still comes from Web Clipper and the target remains `Obsidian-Template/raw/articles`.
 
 If Obsidian Web Clipper is unavailable:
 
