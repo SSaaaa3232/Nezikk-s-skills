@@ -1,11 +1,11 @@
 ---
 name: obsidian
-description: Use when the user enters /obsidian followed by an X/Twitter article link, to open the link with bb-browser using the user's logged-in browser state and save it into the local Obsidian vault folder raw/articles with Obsidian Web Clipper.
+description: Use when the user enters /obsidian followed by an X/Twitter/article URL, or provides an X/Twitter link while asking to save it to Obsidian. Open the link with bb-browser using the user's logged-in browser state, clip it with Obsidian Web Clipper, and save it into Obsidian-Template/raw/articles. This skill is especially important for X/Twitter posts/articles because the logged-in browser state and Web Clipper extraction are required.
 ---
 
 # Obsidian
 
-Use this skill when the user types `/obsidian` followed by a URL, especially an X/Twitter link.
+Use this skill when the user types `/obsidian` followed by a URL, especially an X/Twitter link. Also use it when the user provides an X/Twitter/article URL and the surrounding context says to save or clip it into Obsidian.
 
 Example:
 
@@ -30,17 +30,35 @@ Open the URL with `bb-browser` using the user's existing logged-in browser state
 
 2. Verify browser tooling before opening anything.
    - Check `bb-browser` is available.
+   - Confirm `/Users/saaaaa/Obsidian-Template/raw/articles` exists.
    - If `bb-browser` is not available, stop and say it needs to be installed or configured.
    - Do not silently switch to a fresh browser session, because the point is to reuse the user's logged-in state.
 
 3. Open the URL through `bb-browser`.
    - Use the user's existing local browser state.
    - Wait for the page to load.
+   - Keep the returned `Tab ID`; use it for later `snapshot`, `eval`, and verification commands.
    - If the page requires login and the session is not logged in, stop and ask the user to log in through the browser state used by `bb-browser`.
+   - For X/Twitter, do not trust a sparse accessibility snapshot by itself. X often exposes only shell text in `snapshot` even when the post/article is loaded. Verify with:
+     - `bb-browser eval 'document.body.innerText.slice(0,1000)' --tab <TAB_ID>`
+     - `bb-browser network requests x.com --tab <TAB_ID>` if needed
+   - Continue only when the target post/article text is visible in the DOM.
 
-4. Trigger Obsidian Web Clipper.
-   - Prefer the installed Obsidian Web Clipper extension button or configured browser action.
-   - Confirm the clipper preview contains the expected page title/content.
+4. Open or refresh Obsidian Web Clipper.
+   - Prefer the installed Obsidian Web Clipper extension button, side panel, or configured browser action.
+   - Useful shortcuts from the extension:
+     - `Command+Shift+O` opens the clipper.
+     - `Alt+Shift+O` quick-clips.
+   - If a Web Clipper side panel or popup tab is already open, inspect it instead of opening duplicates.
+   - Confirm the clipper preview contains the expected page title, source URL, author, and content.
+   - Check fields directly when possible:
+     - `#note-name-field`
+     - `#title`
+     - `#source`
+     - `#author`
+     - `#note-content-field`
+     - `#vault-select`
+     - `#path-name-field`
    - Save into `raw/articles` in the local vault.
    - If the clipper asks for a vault, use `Obsidian-Template`.
    - If the clipper asks for a folder/path, use `raw/articles`.
@@ -49,12 +67,39 @@ Open the URL with `bb-browser` using the user's existing logged-in browser state
      - Note location: `raw/articles`
      - Save behavior: `Add to Obsidian`
 
-5. Verify the save.
+5. Fix stale Web Clipper previews before saving.
+   - If the clipper preview shows a different page than the target URL, do not save.
+   - This can happen when `bb-browser tab <index>` selects a tab for automation but Chrome's extension API still reports an older tab as active.
+   - From an Obsidian Web Clipper extension page, inspect Chrome's real active tab:
+
+```javascript
+chrome.tabs.query({}).then(tabs => tabs.map(t => ({
+  id: t.id,
+  active: t.active,
+  url: t.url,
+  title: t.title,
+  windowId: t.windowId
+})))
+```
+
+   - Find the Chrome tab whose `url` exactly matches the target URL, then activate it through the extension API:
+
+```javascript
+chrome.tabs.update(TARGET_CHROME_TAB_ID, { active: true })
+```
+
+   - Reload the Web Clipper side panel/popup after activating the correct Chrome tab.
+   - Re-check `#source`, `#title`, and `#note-content-field`. The `#source` field must match the target URL before saving.
+
+6. Save and verify.
+   - Click `Add to Obsidian`.
    - Confirm the clipper reports success, or verify a new/updated Markdown file appears in the local Obsidian vault.
    - Verify the saved file is under `/Users/saaaaa/Obsidian-Template/raw/articles`.
+   - Verify the saved Markdown frontmatter `source` matches the target URL.
+   - Verify the body contains the expected article/post text, not only a clipboard troubleshooting message.
    - If possible, report the saved note path.
 
-6. Report the result.
+7. Report the result.
    - URL clipped
    - note title or saved path
    - any login/clipper issue encountered
@@ -69,6 +114,14 @@ Open the URL with `bb-browser` using the user's existing logged-in browser state
 ## Fallbacks
 
 If Obsidian Web Clipper generated the Markdown content but Chrome does not hand off the `obsidian://` URL to Obsidian, open the same Obsidian URI with the system `open` command. This is allowed because the content still comes from Web Clipper and the target remains `Obsidian-Template/raw/articles`.
+
+Operational fallback:
+
+1. After clicking `Add to Obsidian`, check the Web Clipper console for a line beginning with `Obsidian URL:`.
+2. Use that exact generated `obsidian://...` URI with `open`.
+3. Do not synthesize a different URI unless the console did not expose one.
+4. Re-verify the created Markdown file under `/Users/saaaaa/Obsidian-Template/raw/articles`.
+5. If the created file contains only Obsidian clipboard troubleshooting text, report the failure instead of claiming success.
 
 If Obsidian Web Clipper is unavailable:
 
