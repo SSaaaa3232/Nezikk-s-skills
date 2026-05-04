@@ -5,7 +5,7 @@
 #### 我自己常用的一些 AI 技能，都放在这里
 
 [![License](https://img.shields.io/badge/License-MIT-3B82F6?style=for-the-badge)](./LICENSE)
-[![Skills](https://img.shields.io/badge/Skills-10-10B981?style=for-the-badge)](#-skills)
+[![Skills](https://img.shields.io/badge/Skills-11-10B981?style=for-the-badge)](#-skills)
 [![Tests](https://img.shields.io/badge/Tests-unittest-F59E0B?style=for-the-badge)](#-测试)
 [![AgentSkills](https://img.shields.io/badge/AgentSkills-Standard-8B5CF6?style=for-the-badge)](https://agentskills.io)
 
@@ -32,6 +32,7 @@
 ```text
 Nezikk-s-skills/
   nskill/                         # 我自己写的 skill
+  git-ana/
   git-create/
   justdo/
   docx-creater/
@@ -70,6 +71,7 @@ Nezikk-s-skills/
 | 🧠 [**remember**](#-remember) | 输入 `/remember`，把刚运行 skill 时踩过的坑沉淀回对应 `SKILL.md` | [SKILL.md](./remember/SKILL.md) |
 | 📦 [**skill-down**](#-skill-down) | 输入 `/skill-down npx skills add ... --skill ...`，把外部 skill 导入本仓库并同步到 Claude/Codex | [SKILL.md](./skill-down/SKILL.md) |
 | 🗒️ [**obsidian**](#-obsidian) | 输入 `/obsidian <X链接>`，用 bb-browser 登录态和 Obsidian Web Clipper 保存文章到本地 vault | [SKILL.md](./obsidian/SKILL.md) |
+| 🔎 [**git-ana**](#-git-ana) | 输入 `/git-ana <GitHub链接>`，像给小白讲技术一样分析项目技术栈和架构 | [SKILL.md](./git-ana/SKILL.md) |
 | 🐙 [**git-create**](#-git-create) | 输入 `/git-create`，把本地项目接到一个新的 GitHub 仓库 | [SKILL.md](./git-create/SKILL.md) |
 | 📁 [**justdo**](#-justdo) | 输入 `/justdo <文件夹名字>`，在桌面项目目录下创建新文件夹 | [SKILL.md](./justdo/SKILL.md) |
 | 🧬 [**synbio-academic-translator**](#-synbio-academic-translator) | 面向合成生物学论文的中英翻译、润色和术语统一 | [SKILL.md](./synbio-academic-translator/SKILL.md) |
@@ -256,6 +258,34 @@ ln -s "/Users/saaaaa/Desktop/Nezikk-s-skills/nskill" "$HOME/.claude/skills/nskil
 - Web Clipper 不可用时停止并提示配置
 
 → [SKILL.md](./obsidian/SKILL.md)
+
+</td></tr>
+</table>
+
+<table>
+<tr><td>
+
+### 🔎 git-ana
+
+> *"看到一个 GitHub 项目，不只是知道它用了什么技术，而是学懂它为什么这么搭。"*
+
+输入 `/git-ana <GitHub链接>` 后，它会读取项目 README、依赖文件、配置、源码目录和测试，分析技术栈、架构和关键文件，并用适合小白学习的方式讲清楚项目背后的知识。
+
+**适合**
+
+- 想快速看懂一个开源项目的技术栈
+- 学习项目背后的架构、工具链和工程取舍
+- 不想只看依赖列表，而是想知道每个技术在项目里负责什么
+
+**它会做什么**
+
+- 规范化 GitHub 仓库链接
+- 基于仓库文件证据识别语言、框架、构建、测试、部署和 CI
+- 用中文解释项目运行逻辑和关键目录
+- 给出学习路线和下一步实操任务
+- 标注不确定点，避免凭空猜技术
+
+→ [SKILL.md](./git-ana/SKILL.md)
 
 </td></tr>
 </table>
