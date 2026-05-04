@@ -5,7 +5,7 @@
 #### 我自己常用的一些 AI 技能，都放在这里
 
 [![License](https://img.shields.io/badge/License-MIT-3B82F6?style=for-the-badge)](./LICENSE)
-[![Skills](https://img.shields.io/badge/Skills-9-10B981?style=for-the-badge)](#-skills)
+[![Skills](https://img.shields.io/badge/Skills-10-10B981?style=for-the-badge)](#-skills)
 [![Tests](https://img.shields.io/badge/Tests-unittest-F59E0B?style=for-the-badge)](#-测试)
 [![AgentSkills](https://img.shields.io/badge/AgentSkills-Standard-8B5CF6?style=for-the-badge)](https://agentskills.io)
 
@@ -67,6 +67,7 @@ Nezikk-s-skills/
 | 名字 | 一句话 | 文件 |
 |---|---|---|
 | 🧩 [**nskill**](#-nskill) | 输入 `/nskill <name>`，自动创建同名 skill 文件夹并发布到这个仓库 | [SKILL.md](./nskill/SKILL.md) |
+| 🧠 [**remember**](#-remember) | 输入 `/remember`，把刚运行 skill 时踩过的坑沉淀回对应 `SKILL.md` | [SKILL.md](./remember/SKILL.md) |
 | 📦 [**skill-down**](#-skill-down) | 输入 `/skill-down npx skills add ... --skill ...`，把外部 skill 导入本仓库并同步到 Claude/Codex | [SKILL.md](./skill-down/SKILL.md) |
 | 🗒️ [**obsidian**](#-obsidian) | 输入 `/obsidian <X链接>`，用 bb-browser 登录态和 Obsidian Web Clipper 保存文章到本地 vault | [SKILL.md](./obsidian/SKILL.md) |
 | 🐙 [**git-create**](#-git-create) | 输入 `/git-create`，把本地项目接到一个新的 GitHub 仓库 | [SKILL.md](./git-create/SKILL.md) |
@@ -167,6 +168,34 @@ ln -s "/Users/saaaaa/Desktop/Nezikk-s-skills/nskill" "$HOME/.claude/skills/nskil
 - `git commit` 后推送到远端
 
 → [SKILL.md](./nskill/SKILL.md)
+
+</td></tr>
+</table>
+
+<table>
+<tr><td>
+
+### 🧠 remember
+
+> *"刚跑完一个 skill 发现绕路了，就把这次经验写回 skill，让下次不再踩同一个坑。"*
+
+输入 `/remember` 后，它会根据参数或最近一次执行记录定位对应 skill，并把可复用的失败原因、兜底步骤、验证命令或用户偏好合并进目标 `SKILL.md`。
+
+**适合**
+
+- 某个 skill 刚执行完，发现流程绕路或缺少 fallback
+- 用户纠正了路径、工具、验证方式或安全边界
+- 想把一次临时修复沉淀成 Claude/Codex 都能读到的长期规则
+
+**它会做什么**
+
+- 定位要优化的目标 skill
+- 从当前对话提取可复用经验
+- 修改目标 `SKILL.md`，必要时补测试
+- 跑测试并只提交相关文件
+- 保留其他未提交改动不动
+
+→ [SKILL.md](./remember/SKILL.md)
 
 </td></tr>
 </table>
