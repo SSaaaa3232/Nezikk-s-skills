@@ -5,7 +5,7 @@
 #### 我自己常用的一些 AI 技能，都放在这里
 
 [![License](https://img.shields.io/badge/License-MIT-3B82F6?style=for-the-badge)](./LICENSE)
-[![Skills](https://img.shields.io/badge/Skills-11-10B981?style=for-the-badge)](#-skills)
+[![Skills](https://img.shields.io/badge/Skills-12-10B981?style=for-the-badge)](#-skills)
 [![Tests](https://img.shields.io/badge/Tests-unittest-F59E0B?style=for-the-badge)](#-测试)
 [![AgentSkills](https://img.shields.io/badge/AgentSkills-Standard-8B5CF6?style=for-the-badge)](https://agentskills.io)
 
@@ -32,6 +32,7 @@
 ```text
 Nezikk-s-skills/
   nskill/                         # 我自己写的 skill
+  repeat/
   git-ana/
   git-create/
   justdo/
@@ -68,6 +69,7 @@ Nezikk-s-skills/
 | 名字 | 一句话 | 文件 |
 |---|---|---|
 | 🧩 [**nskill**](#-nskill) | 输入 `/nskill <name>`，自动创建同名 skill 文件夹并发布到这个仓库 | [SKILL.md](./nskill/SKILL.md) |
+| 🔁 [**repeat**](#-repeat) | 输入 `/repeat <内容>`，复述用户要求以同步用户想法和 agent 操作 | [SKILL.md](./repeat/SKILL.md) |
 | 🧠 [**remember**](#-remember) | 输入 `/remember`，把刚运行 skill 时踩过的坑沉淀回对应 `SKILL.md` | [SKILL.md](./remember/SKILL.md) |
 | 📦 [**skill-down**](#-skill-down) | 输入 `/skill-down npx skills add ... --skill ...`，把外部 skill 导入本仓库并同步到 Claude/Codex | [SKILL.md](./skill-down/SKILL.md) |
 | 🗒️ [**obsidian**](#-obsidian) | 输入 `/obsidian <X链接>`，用 bb-browser 登录态和 Obsidian Web Clipper 保存文章到本地 vault | [SKILL.md](./obsidian/SKILL.md) |
@@ -170,6 +172,34 @@ ln -s "/Users/saaaaa/Desktop/Nezikk-s-skills/nskill" "$HOME/.claude/skills/nskil
 - `git commit` 后推送到远端
 
 → [SKILL.md](./nskill/SKILL.md)
+
+</td></tr>
+</table>
+
+<table>
+<tr><td>
+
+### 🔁 repeat
+
+> *"先别急着做，先把我的意思复述清楚，确认你理解对了。"*
+
+输入 `/repeat <内容>` 后，它会把用户要求复述成清晰结构，帮助用户和 Agent 在目标、约束、默认处理方式和下一步动作上对齐。
+
+**适合**
+
+- 需求比较长，想先确认 Agent 有没有理解对
+- 执行前需要同步用户想法和 Agent 操作
+- 想把模糊想法整理成可检查的任务描述
+
+**它会做什么**
+
+- 解析 `/repeat` 后面的内容
+- 保留关键名称、路径、命令、URL 和约束
+- 区分已确认事实和默认假设
+- 输出目标、约束、默认处理方式和需要确认的问题
+- 只复述，不执行任务
+
+→ [SKILL.md](./repeat/SKILL.md)
 
 </td></tr>
 </table>
