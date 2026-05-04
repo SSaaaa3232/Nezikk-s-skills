@@ -13,12 +13,22 @@ class NSkillSkillTests(unittest.TestCase):
 
         self.assertIn("name: nskill", content)
         self.assertIn("/nskill", content)
+        self.assertIn("/nskill <name> <function description>", content)
         self.assertIn("Nezikk-s-skills", content)
-        self.assertIn("目标文件夹名", content)
+        self.assertIn("function description", content)
+        self.assertIn("slash command trigger", content)
+        self.assertIn("/<skill-name>", content)
+        self.assertIn("skill-creator", content)
         self.assertIn("SKILL.md", content)
+        self.assertIn("tests/test_<skill_name_with_underscores>_skill.py", content)
+        self.assertIn("./scripts/link-skill.sh <skill-name>", content)
+        self.assertIn("readlink ~/.agents/skills/<skill-name>", content)
+        self.assertIn("README.md", content)
         self.assertIn("git status", content)
         self.assertIn("git commit", content)
         self.assertIn("git push", content)
+        self.assertIn("Do not create only a minimal placeholder", content)
+        self.assertIn("callable as `/<skill-name> ...`", content)
 
     def test_readme_lists_nskill(self) -> None:
         content = README_PATH.read_text(encoding="utf-8")
