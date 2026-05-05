@@ -21,6 +21,9 @@ class GitAnaSkillTests(unittest.TestCase):
         self.assertIn("Dockerfile", content)
         self.assertIn("技术栈地图", content)
         self.assertIn("小白版运行逻辑", content)
+        self.assertIn("non-specialist explanation style", content)
+        self.assertIn("non-professional and easy to understand", content)
+        self.assertIn("Avoid jargon-first wording", content)
         self.assertIn("Do not execute unknown project code", content)
 
     def test_readme_lists_git_ana(self) -> None:

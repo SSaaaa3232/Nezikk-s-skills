@@ -17,6 +17,8 @@ Example:
 
 Analyze a GitHub project like a technical teacher. The output should help a beginner understand not only "what technologies are used", but also "why those technologies exist in the project" and "what knowledge can be learned from the project".
 
+Default to a non-specialist explanation style: explain the project as if the reader can code a little but has not learned the project's domain. Translate technical claims into plain-language meaning before naming the formal term.
+
 ## Workflow
 
 1. Parse and validate the GitHub URL.
@@ -92,6 +94,8 @@ Analyze a GitHub project like a technical teacher. The output should help a begi
 
 - Write in Chinese.
 - Assume the reader can code a little but is new to the project's domain.
+- Keep explanations non-professional and easy to understand: say "这个东西解决什么问题" before "它叫什么技术名".
+- Avoid jargon-first wording. When a term is necessary, define it immediately in everyday language and then continue with the concrete project example.
 - Be concrete and educational, not just a bullet list of dependencies.
 - Explain acronyms and framework names the first time they appear.
 - Prefer "这个项目里 X 负责..." over generic encyclopedia explanations.
