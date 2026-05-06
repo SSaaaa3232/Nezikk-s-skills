@@ -147,9 +147,11 @@ Operational fallback:
 
 1. After clicking `Add to Obsidian`, check the Web Clipper console for a line beginning with `Obsidian URL:`.
 2. Use that exact generated `obsidian://...` URI with `open`.
+   - If the URI contains `&clipboard&content=Obsidian%20is%20not%20able%20to%20access%20your%20clipboard...`, still open the exact URI. In practice, Chrome may have copied the real Web Clipper note body to the clipboard while using that `content=` value only as Obsidian's troubleshooting fallback.
+   - Do not replace or "fix" the URI before opening it.
 3. Do not synthesize a different URI unless the console did not expose one.
-4. Re-verify the created Markdown file under `/Users/saaaaa/Obsidian-Template/raw/articles`.
-5. If the created file contains only Obsidian clipboard troubleshooting text, report the failure instead of claiming success.
+4. Re-verify the created Markdown file under `/Users/saaaaa/Obsidian-Template/raw/articles` by searching for the target `source` URL and expected body text.
+5. If the created file contains only Obsidian clipboard troubleshooting text, report the failure instead of claiming success. If the file contains the target source and expected article/post body, treat the fallback as successful even though the console URI included the troubleshooting `content=` parameter.
 
 If Obsidian Web Clipper is unavailable:
 
