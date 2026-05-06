@@ -70,6 +70,7 @@ Open the URL with `bb-browser` using the user's existing logged-in browser state
 5. Fix stale Web Clipper previews before saving.
    - If the clipper preview shows a different page than the target URL, do not save.
    - This can happen when `bb-browser tab <index>` selects a tab for automation but Chrome's extension API still reports an older tab as active.
+   - If a shortcut opens or refreshes an existing side panel attached to a different tab, inspect the extension fields before clicking save. A stale panel can keep `#source`, `#title`, and `#note-content-field` from the older X/Twitter page even after the target tab is visible in `bb-browser`.
    - From an Obsidian Web Clipper extension page, inspect Chrome's real active tab:
 
 ```javascript
@@ -90,10 +91,37 @@ chrome.tabs.update(TARGET_CHROME_TAB_ID, { active: true })
 
    - Reload the Web Clipper side panel/popup after activating the correct Chrome tab.
    - Re-check `#source`, `#title`, and `#note-content-field`. The `#source` field must match the target URL before saving.
+   - If `bb-browser` cannot address the Web Clipper side-panel iframe as a tab, use the browser's CDP target list to find the extension iframe whose URL contains `chrome-extension://.../side-panel.html?context=iframe`, then evaluate the field checks in that iframe target. The bb-browser daemon CDP port is visible in process args or daemon status; `curl http://127.0.0.1:<port>/json/list` lists page and iframe targets.
+   - If the side panel remains attached to the wrong page, inject a fresh Web Clipper iframe into the target page instead of saving the stale preview:
+
+```javascript
+(() => {
+  const old = document.getElementById("manual-obsidian-clipper");
+  if (old) old.remove();
+  const iframe = document.createElement("iframe");
+  iframe.id = "manual-obsidian-clipper";
+  iframe.src = "chrome-extension://cnjifjpddelmedmihgijeibhnjfabmlf/side-panel.html?context=iframe";
+  Object.assign(iframe.style, {
+    position: "fixed",
+    right: "0",
+    top: "0",
+    width: "420px",
+    height: "100vh",
+    zIndex: "2147483647",
+    border: "0",
+    background: "white"
+  });
+  document.body.appendChild(iframe);
+})();
+```
+
+   - After injecting a fresh iframe, use CDP target inspection again to verify `#source` equals the target URL and `#note-content-field` contains the expected X/Twitter article text before clicking `#clip-btn`.
+   - Do not treat a direct `bb-browser open chrome-extension://.../popup.html` failure such as `ERR_BLOCKED_BY_CLIENT` as proof that Web Clipper is unavailable. Prefer the installed extension iframe or the extension side panel already loaded in the target page.
 
 6. Save and verify.
    - Click `Add to Obsidian`.
-   - Confirm the clipper reports success, or verify a new/updated Markdown file appears in the local Obsidian vault.
+   - Confirm the clipper reports success, verify the console exposes an `Obsidian URL:`, or verify a new/updated Markdown file appears in the local Obsidian vault.
+   - If clicking `Add to Obsidian` produces no new/updated file and no `Obsidian URL:` in the relevant page/extension console, do not claim success. Report that the preview was correct but the handoff/save did not complete.
    - Verify the saved file is under `/Users/saaaaa/Obsidian-Template/raw/articles`.
    - Verify the saved Markdown frontmatter `source` matches the target URL.
    - Verify the body contains the expected article/post text, not only a clipboard troubleshooting message.
