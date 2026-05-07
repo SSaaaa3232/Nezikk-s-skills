@@ -5,7 +5,7 @@
 #### 我自己常用的一些 AI 技能，都放在这里
 
 [![License](https://img.shields.io/badge/License-MIT-3B82F6?style=for-the-badge)](./LICENSE)
-[![Skills](https://img.shields.io/badge/Skills-12-10B981?style=for-the-badge)](#-skills)
+[![Skills](https://img.shields.io/badge/Skills-13-10B981?style=for-the-badge)](#-skills)
 [![Tests](https://img.shields.io/badge/Tests-unittest-F59E0B?style=for-the-badge)](#-测试)
 [![AgentSkills](https://img.shields.io/badge/AgentSkills-Standard-8B5CF6?style=for-the-badge)](https://agentskills.io)
 
@@ -80,6 +80,7 @@ Nezikk-s-skills/
 | 📄 [**docx-creater**](#-docx-creater) | 生成、整理和格式化 `.docx` 文档 | [SKILL.md](./docx-creater/SKILL.md) |
 | 📥 [**download-yang**](#-download-yang) | 从杨的飞书消息里列出近期文件，确认后下载 | [SKILL.md](./feishu-yang/download-yang/SKILL.md) |
 | 📤 [**send-yang**](#-send-yang) | 把本地文件上传并发送到杨的飞书会话 | [SKILL.md](./feishu-yang/send-yang/SKILL.md) |
+| 🔓 [**reverse**](#-reverse) | 输入 `/reverse <URL>`，分析网站登录流程、还原调用链、生成 PoC 和批量注册脚本 | [SKILL.md](./reverse/SKILL.md) |
 
 ### External Skills
 
@@ -449,6 +450,12 @@ ln -s "/Users/saaaaa/Desktop/Nezikk-s-skills/nskill" "$HOME/.claude/skills/nskil
 - 下载前先看文件名、消息 ID 和时间
 - 避免误下不相关文件
 
+**默认固定配置**
+
+- 可在 `feishu-yang/feishu-yang-automation/.env.feishu-yang` 里保存固定值
+- 模板文件：`feishu-yang/feishu-yang-automation/.env.feishu-yang.example`
+- 已设置的环境变量会覆盖这份本地配置
+
 **需要环境变量**
 
 - `FEISHU_APP_ID`
@@ -477,6 +484,12 @@ ln -s "/Users/saaaaa/Desktop/Nezikk-s-skills/nskill" "$HOME/.claude/skills/nskil
 - 避免重复手动打开飞书上传
 - 复用同一套飞书 API 配置
 
+**默认固定配置**
+
+- 可在 `feishu-yang/feishu-yang-automation/.env.feishu-yang` 里保存固定值
+- 模板文件：`feishu-yang/feishu-yang-automation/.env.feishu-yang.example`
+- 已设置的环境变量会覆盖这份本地配置
+
 **需要环境变量**
 
 - `FEISHU_APP_ID`
@@ -486,6 +499,42 @@ ln -s "/Users/saaaaa/Desktop/Nezikk-s-skills/nskill" "$HOME/.claude/skills/nskil
 它依赖共享脚本：[`feishu_yang_cli.py`](./feishu-yang/feishu-yang-automation/scripts/feishu_yang_cli.py)
 
 → [SKILL.md](./feishu-yang/send-yang/SKILL.md)
+
+</td></tr>
+</table>
+
+<table>
+<tr><td>
+
+### 🔓 reverse
+
+> *"这个网站有没有签名校验？能不能写个批量注册脚本？——先把门锁结构搞清楚，再考虑怎么开门。"*
+
+输入 `/reverse <URL>` 或自然语言描述后，它会按 6 阶段流程分析目标 Web 应用的认证和 API 机制：防护等级判定 → 核心发现提取 → 调用链还原 → PoC 重放测试 → 报告生成 → 批量自动化脚本。
+
+**适合**
+
+- 分析网站登录流程（next-auth / SIWE / tRPC / 自定义签名）
+- 判断前端防护水平（T0-T3）和是否可绕过
+- 还原 API 调用链并生成可执行 PoC 脚本
+- 生成带证据表的逆向报告和 Premium Bypass 报告
+- 批量注册脚本（单线程 → 链上粉尘 → 代理池轮换）
+
+**它会做什么**
+
+- 判定防护等级（T0-T3）并识别协议指纹
+- 提取硬编码密钥、签名消息格式并附证据锚点
+- 还原完整 HTTP 调用链（ASCII 流程图）
+- 生成分层 PoC（假签名测试 → 真签名单次 → 批量）
+- 输出 9 章标准逆向报告
+
+**安全边界**
+
+- 仅用于安全研究、CTF、授权渗透测试和学习
+- 不 DDoS、不绕过付费墙牟利、不提取用户数据
+- 生成的脚本自带延时和并发控制
+
+→ [SKILL.md](./reverse/SKILL.md) · [references/](./reverse/references/) · [scripts/](./reverse/scripts/)
 
 </td></tr>
 </table>
@@ -503,8 +552,11 @@ python3 -m unittest discover -s tests -p 'test_*.py' -v
 当前覆盖：
 
 - `tests/test_nskill_skill.py`
+- `tests/test_repeat_skill.py`
+- `tests/test_remember_skill.py`
 - `tests/test_git_create_skill.py`
 - `tests/test_justdo_skill.py`
+- `tests/test_reverse_skill.py`
 - `tests/test_extract_docx_paragraphs.py`
 - `tests/test_feishu_yang_cli.py`
 
