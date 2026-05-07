@@ -1,6 +1,6 @@
 ---
 name: reverse
-description: Use when the user enters /reverse with a target URL or asks to reverse engineer web login/auth flows, batch registration, signature analysis, API call chain reproduction, protection level assessment, packet capture analysis, or PoC script generation. Covers Chinese natural language: 分析登录流程、抓包看认证、看看防护水平、有无签名校验、写批量注册脚本、复现API调用链、逆向分析、前端防护什么等级、怎么模拟请求、能不能绕过、有没有硬编码密钥、接口逆向、HAR分析.
+description: Use when the user enters /reverse with a target URL or asks to reverse engineer web login/auth flows, batch registration, signature analysis, API call chain reproduction, protection level assessment, packet capture analysis, or PoC script generation. Covers Chinese natural language: 分析登录流程、抓包看认证、看看防护水平、有无签名校验、写批量注册脚本、复现API调用链、逆向分析、前端防护什么等级、怎么模拟请求、能不能绕过、有没有硬编码密钥、接口逆向、HAR分析、分析一下这个网站的登录、帮我分析HAR、复现一下调用链、模拟请求.
 ---
 
 # reverse
