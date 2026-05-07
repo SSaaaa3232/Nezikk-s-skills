@@ -75,9 +75,9 @@ Output a unified evidence table:
 ```
 
 Confidence standard:
-- **HIGH**: Directly visible in source + cross-referenced (e.g., config + code usage both confirm)
-- **MEDIUM**: Inferred from patterns or single-source, not cross-validated
-- **LOW**: Guess based on conventions or naming alone
+- **HIGH**: Directly visible in source + cross-referenced (e.g., config + code usage both confirm). Also applies to unambiguous facts like "file A and file B are byte-for-byte identical."
+- **MEDIUM**: Inferred from patterns or single-source, not cross-validated. **Author intent inferences cap at MEDIUM** unless the author explicitly stated the intent in a commit message, code comment, or README. "The author did X because they prioritized speed" is always MEDIUM unless there is a direct quote.
+- **LOW**: Guess based on conventions or naming alone. Do not use LOW entries as primary conclusions — list them under UNKNOWNS if uncertain.
 
 ### Phase 6 — FACTS / INFERENCES / UNKNOWNS
 
@@ -98,6 +98,16 @@ If someone wanted to rebuild this project from scratch with the same methodology
 
 ```markdown
 ## 项目一句话 + 方法论总结
+
+（一句话判断项目性质，然后输出一个 ASCII 方法论流程框：
+
+```
+Phase 1 (源码起点识别)  → Phase 2 (核心发现/决策树)
+Phase 3 (POC 最小验证)  → Phase 4 (横切能力补全)
+Phase 5 (结构化存储)     → Phase 6 (服务抽象 + UI) → Phase 7 (文档后追)
+```
+
+方框内的 phase 名称必须从实际分析中提取，不要照抄模板。）
 
 ## 技术选型决策树
 （Problem → Options → Choice → Evidence → Inference 表格）

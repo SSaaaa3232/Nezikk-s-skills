@@ -53,6 +53,21 @@ class GitAnaSkillTests(unittest.TestCase):
         self.assertIn("chain of reasoning", content)
         self.assertIn("FACTS", content)
 
+    def test_git_ana_requires_methodology_summary_box(self) -> None:
+        content = SKILL_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("方法论总结", content)
+        self.assertIn("ASCII", content)
+        self.assertIn("Phase", content)  # flow box uses Phase naming
+
+    def test_git_ana_caps_author_intent_inference_at_medium(self) -> None:
+        content = SKILL_PATH.read_text(encoding="utf-8")
+
+        self.assertIn("Author intent inferences cap at MEDIUM", content)
+        self.assertIn("unless the author explicitly stated", content)
+        self.assertIn("commit message", content)
+        self.assertIn("direct quote", content)
+
     def test_readme_lists_git_ana(self) -> None:
         content = README_PATH.read_text(encoding="utf-8")
 
