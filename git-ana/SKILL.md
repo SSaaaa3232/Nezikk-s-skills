@@ -1,6 +1,6 @@
 ---
 name: git-ana
-description: Use when the user enters /git-ana with a GitHub URL or asks to analyze a project's build methodology, trace how the author built it from scratch, reverse-engineer architecture decisions, or dissect tech stack choices with evidence. Covers Chinese: 分析一下这个项目怎么构建的、作者是怎么从零搭建的、源码剖析、架构逆向、技术选型有什么依据、帮我剖析这个仓库、复现这个项目的构建思路、这个项目用了什么设计模式、作者为什么这么设计、项目架构分析
+description: "Use when the user enters /git-ana with a GitHub URL or asks to analyze a project's build methodology, trace how the author built it from scratch, reverse-engineer architecture decisions, or dissect tech stack choices with evidence. Covers Chinese: 分析一下这个项目怎么构建的、作者是怎么从零搭建的、源码剖析、架构逆向、技术选型有什么依据、帮我剖析这个仓库、复现这个项目的构建思路、这个项目用了什么设计模式、作者为什么这么设计、项目架构分析"
 allowed-tools: Bash, Read, Write, Grep, Glob, WebFetch
 model: sonnet
 ---
