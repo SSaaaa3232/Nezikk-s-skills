@@ -1,109 +1,147 @@
 ---
 name: git-ana
-description: Use when the user enters /git-ana followed by a GitHub repository URL and wants a beginner-friendly technical analysis of the project, including its tech stack, architecture, key files, how the project works, and what learners can study from it.
+description: Use when the user enters /git-ana with a GitHub URL or asks to analyze a project's build methodology, trace how the author built it from scratch, reverse-engineer architecture decisions, or dissect tech stack choices with evidence. Covers Chinese: 分析一下这个项目怎么构建的、作者是怎么从零搭建的、源码剖析、架构逆向、技术选型有什么依据、帮我剖析这个仓库、复现这个项目的构建思路、这个项目用了什么设计模式、作者为什么这么设计、项目架构分析
+allowed-tools: Bash, Read, Write, Grep, Glob, WebFetch
+model: sonnet
 ---
 
 # git-ana
 
-Use this skill when the user types `/git-ana <GitHub repository URL>`.
-
-Example:
+Use this skill when the user types `/git-ana <GitHub URL>` or asks in natural language to dissect a project's construction methodology. Typical triggers:
 
 ```text
 /git-ana https://github.com/owner/repo
+
+分析一下这个项目怎么构建的
+作者是怎么从零搭建这个项目的 / 技术选型有什么依据
+帮我剖析这个仓库的架构 / 这个项目用了什么设计模式
 ```
 
 ## Goal
 
-Analyze a GitHub project like a technical teacher. The output should help a beginner understand not only "what technologies are used", but also "why those technologies exist in the project" and "what knowledge can be learned from the project".
-
-Default to a non-specialist explanation style: explain the project as if the reader can code a little but has not learned the project's domain. Translate technical claims into plain-language meaning before naming the formal term.
+Reverse-engineer the AUTHOR's build process. Given a GitHub URL, trace how the author constructed the project from scratch — what decisions they made, what evidence supports each inference, what methods and patterns they used. Output a methodology analysis document, not a beginner tutorial.
 
 ## Workflow
 
-1. Parse and validate the GitHub URL.
-   - Require exactly one GitHub repository URL.
-   - Accept `https://github.com/<owner>/<repo>` and URLs with extra paths; normalize to the repository root.
-   - If no URL is provided, ask the user for the repository URL.
+### Phase 1 — Project Origin & Scaffold Identification
 
-2. Gather evidence from the repository.
-   - Use current GitHub information; do not rely only on memory.
-   - Inspect the repository root, README, package/build files, dependency manifests, config files, source directories, examples, docs, and tests when available.
-   - Prefer primary project files over third-party summaries.
-   - Useful files to inspect include:
-     - `README*`, `docs/`, `examples/`
-     - `package.json`, `pnpm-lock.yaml`, `yarn.lock`, `vite.config.*`, `next.config.*`
-     - `pyproject.toml`, `requirements.txt`, `uv.lock`, `setup.py`
-     - `Cargo.toml`, `go.mod`, `pom.xml`, `build.gradle`
-     - `Dockerfile`, `docker-compose.yml`, `.github/workflows/`
-     - `src/`, `app/`, `lib/`, `server/`, `client/`, `tests/`
-   - If the repository is large, inspect representative files instead of reading everything.
+1. Parse and validate the GitHub URL. Normalize to repo root.
+2. Identify the project's starting point:
+   - Scaffold/CLI traces: `create-next-app`, `npm init`, `vue create`, `cargo init`, fork markers
+   - Evidence sources: `package.json` scripts field, git initial commit message, lockfile timestamps, config file defaults
+   - Record as: **Origin** + evidence anchor + confidence (HIGH/MEDIUM/LOW)
 
-3. Identify the project type and tech stack.
-   - Determine what the project is for in one sentence.
-   - Identify languages, frameworks, runtime, package manager, database/storage, UI framework, API style, build system, deployment/runtime, test tools, and CI if present.
-   - Tie every claim to file evidence. Say "I infer" when a conclusion is not explicitly stated.
+### Phase 2 — Tech Stack Decision Tree
 
-4. Explain the architecture for beginners.
-   - Avoid jargon-first explanations.
-   - Explain each important technology with:
-     - what it does in this project
-     - why the project likely uses it
-     - what a learner should understand before modifying it
-   - Use analogies only when they clarify the engineering idea.
-   - Explain the project's likely request/data flow or execution flow.
+1. Gather evidence from: README, package/build files, dependency manifests, config files, source directories.
+2. For each major technology choice, answer:
+   - What was chosen?
+   - What were the alternatives?
+   - Why did the author likely pick this? (cite evidence: type constraints, performance needs, ecosystem lock-in)
+3. Format as a decision table:
 
-5. Teach through key files.
-   - Pick the most important files/directories.
-   - For each one, explain:
-     - role in the project
-     - what to read first
-     - what concept it teaches
-   - Do not paste long source code. Summarize and link to files.
+```
+| Problem | Options | Choice | Evidence | Inference |
+|---------|---------|--------|----------|------------|
+| ...     | ...     | ...    | ...      | ...        |
+```
 
-6. Produce a learning-oriented report in Chinese.
-   - Use this structure:
+### Phase 3 — Architecture Construction Timeline
+
+1. From commit history and directory structure, infer the BUILD ORDER.
+2. Key questions:
+   - What was built first? (auth? data model? UI shell? routing?)
+   - What was added later? (tests? CI/CD? monitoring? docs?)
+   - Where are the "get it working → make it right" pivot points?
+3. Output as a chronological timeline, each step with evidence.
+
+### Phase 4 — Key Implementation Analysis
+
+1. Identify 3-5 core modules/flows (auth, data pipeline, API design, state management, etc.)
+2. For each one, analyze:
+   - **Pattern used** (middleware chain, factory, observer, repository, etc.)
+   - **Author's approach** (unusual or idiomatic? why this pattern for this problem?)
+   - **Evidence** (file:line patterns, commit messages, config structure)
+3. Do NOT explain what the code does. State what pattern the author chose, where, and why that reveals their intent.
+
+### Phase 5 — Evidence Table
+
+Output a unified evidence table:
+
+```
+| # | Discovery | Evidence Anchor | Confidence |
+|---|-----------|-----------------|------------|
+| 1 | ...       | file:line / commit hash / config key | HIGH/MEDIUM/LOW |
+```
+
+Confidence standard:
+- **HIGH**: Directly visible in source + cross-referenced (e.g., config + code usage both confirm)
+- **MEDIUM**: Inferred from patterns or single-source, not cross-validated
+- **LOW**: Guess based on conventions or naming alone
+
+### Phase 6 — FACTS / INFERENCES / UNKNOWNS
+
+Categorize all findings:
+
+- **FACTS**: Directly confirmed in code or configuration — no interpretation needed
+- **INFERENCES**: Reasonable deductions from evidence, with explicit reasoning chain
+- **UNKNOWNS**: Gaps where the author's intent is unclear or evidence is missing
+
+### Phase 7 — Reproduction Path
+
+If someone wanted to rebuild this project from scratch with the same methodology:
+1. Step-by-step reconstruction order
+2. What to build at each step and why
+3. What the author's approach teaches about the problem domain
+
+## Output Structure
 
 ```markdown
-## 项目一句话
+## 项目一句话 + 方法论总结
 
-## 技术栈地图
+## 技术选型决策树
+（Problem → Options → Choice → Evidence → Inference 表格）
 
-## 小白版运行逻辑
+## 架构构建推演
+（时间线：作者从哪开始，一步步加了什么，每一步的证据是什么）
 
-## 关键目录和文件
+## 关键实现分析
+（3-5 个核心模块：模式选择 + 作者思路 + 证据锚点）
 
-## 背后的技术知识
+## 证据表
+（发现 + 证据锚点 + 置信度，至少 5 条）
 
-## 学习路线
+## FACTS / INFERENCES / UNKNOWNS
 
-## 我会重点读哪里
+## 复现路径
+（如果我想重写一个，具体该怎么做）
 
 ## 不确定点
 
 ## 参考链接
+（GitHub 仓库链接、关键文件链接等）
 ```
-
-7. Keep the report honest.
-   - Do not claim technologies that were not found in repo evidence.
-   - If a dependency appears in a manifest but usage was not inspected, say so.
-   - If setup or architecture is unclear, list it under "不确定点".
-   - Include links to the GitHub repository and important files inspected.
 
 ## Output Style
 
-- Write in Chinese.
-- Assume the reader can code a little but is new to the project's domain.
-- Keep explanations non-professional and easy to understand: say "这个东西解决什么问题" before "它叫什么技术名".
-- Avoid jargon-first wording. When a term is necessary, define it immediately in everyday language and then continue with the concrete project example.
-- Be concrete and educational, not just a bullet list of dependencies.
-- Explain acronyms and framework names the first time they appear.
-- Prefer "这个项目里 X 负责..." over generic encyclopedia explanations.
-- End with 3-5 practical learning tasks the user can do next.
+- Write in Chinese (code identifiers and file paths in English).
+- Every claim must be anchored to evidence: file path, line pattern, commit hash, or config key.
+- Confidence levels must be explicit on every claim.
+- Do NOT explain what the code does — state what was found, where, and why it reveals the author's intent.
+- Prefer "作者这里选了 X 而不是 Y，依据是 Z" over "这个项目用了 X".
 
-## Safety and Scope
+## Verification
+
+After completing the analysis:
+1. The evidence table has ≥5 entries, each with a verifiable evidence anchor.
+2. Every INFERENCE has a stated chain of reasoning.
+3. The reproduction path is concrete and actionable (specific steps, not abstract advice).
+4. The report cleanly separates FACTS (confirmed) from INFERENCES (deduced).
+
+## Boundaries
 
 - Do not execute unknown project code during analysis.
 - Do not run install scripts from an unfamiliar repository unless the user explicitly asks.
-- Do not clone private repositories or access non-public content unless the user has provided access and asked for it.
-- For security-sensitive projects, describe the design but avoid giving exploit instructions.
+- Do not clone private repositories or access non-public content without authorization.
+- For security-sensitive projects, describe design but avoid exploit instructions.
+- This skill analyzes methodology — it does NOT audit code quality, review PRs, or judge the author's skill level.
