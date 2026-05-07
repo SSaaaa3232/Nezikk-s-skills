@@ -29,6 +29,8 @@ class ReverseSkillTests(unittest.TestCase):
         self.assertIn("Workflow", content)
         self.assertIn("Boundaries", content)
         self.assertIn("Educational and authorized use only", content)
+        self.assertIn("Observe first, match later", content)
+        self.assertIn("custom protocol fingerprint", content)
 
     def test_reference_files_exist(self) -> None:
         refs_dir = REPO_ROOT / "reverse" / "references"

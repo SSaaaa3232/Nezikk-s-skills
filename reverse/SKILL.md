@@ -51,9 +51,14 @@ This skill is a **pre-unlocker** for execution tools. It does not scrape data or
    - **T2**: String encryption, control-flow flattening, dead branches
    - **T3**: WASM / VMP virtual machine protection
    - Use `references/protection-levels.md` for detailed criteria.
-4. Identify protocol fingerprints from observed request patterns:
-   - `references/protocol-fingerprints.md` covers next-auth, tRPC, GraphQL, JWT, OAuth patterns.
-5. Determine analysis priorities: sort endpoints by business value (login > claim > API key > chat).
+4. **Observe first, match later.** For each request in the HAR/Network log:
+   - Describe its URL pattern (path structure, parameter style, extension, subdomain)
+   - Describe its request body format (JSON / Form / Multipart / Binary / Encrypted blob)
+   - Describe its auth mechanism (Authorization header? Cookie? Custom header?) — do NOT name-drop "JWT" yet, just say "Bearer token with three dot-separated segments"
+   - Describe any repeating signature/timestamp/nonce fields across different requests
+   - Only after describing raw observations, match against the fingerprint library in `references/protocol-fingerprints.md`
+5. If no known fingerprint matches, **build a custom protocol fingerprint from scratch** using the "通用识别方法论" in `references/protocol-fingerprints.md`. Document URL patterns, body format, auth flow, and signature scheme in the report. This is the most important skill — do NOT force-fit an unknown protocol into known categories.
+6. Determine analysis priorities: sort endpoints by business value (login > core feature > secondary feature).
 
 ### Phase 2 — Core Discovery Extraction
 
