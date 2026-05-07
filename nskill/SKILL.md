@@ -55,7 +55,15 @@ Turn one skill request into an **industrial-grade** skill that is: correctly tri
 - Use the skeleton in `references/skill-skeleton.md` as template.
 - Frontmatter MUST include: `name`, `description`, `allowed-tools`, `model`.
 - `allowed-tools`: give only the tools needed for the task. Default: `Bash, Read, Write, Grep`. Add `Edit` only if modifying files. Add `WebFetch` only if fetching URLs. Never give `Agent` unless explicitly requested.
-- `model`: match task difficulty. `opus` for heavy reasoning (reverse engineering, code analysis), `sonnet` for structured output (report generation, doc writing), `haiku` for simple lookups.
+- `model`: select based on the task's **reasoning demand**, not a fixed name. Write the value that your platform understands (Claude: `opus`/`sonnet`/`haiku`, Codex: `gpt-5`/`o4-mini`, others: equivalent). The mapping is:
+
+  | Need | Capability | Claude | Codex (example) |
+  |------|-----------|--------|-----------------|
+  | Heavy reasoning, multi-step analysis, code generation | **Strong** | `opus` | `gpt-5` |
+  | Structured output, reports, docs, balanced speed/quality | **Balanced** | `sonnet` | `o4-mini` or `gpt-5` |
+  | Simple lookup, keyword check, classification | **Fast** | `haiku` | `o4-mini` |
+
+  Choose one tier above. The agent reading this SKILL.md maps it to whatever is available on its runtime. **Prefer the platform-native model name in the frontmatter value** so the runtime can parse it directly.
 - Body MUST document: trigger format, examples in user's natural language, goal, workflow steps, output style, verification steps, boundaries/safety rules.
 - Keep under 500 lines. Put long docs in `references/`, stable ops in `scripts/`, templates/samples in `assets/`.
 - The skill MUST be immediately usable when the user types `/<skill-name> ...`.

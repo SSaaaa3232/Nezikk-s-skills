@@ -7,7 +7,7 @@ Use this template when generating a new skill via nskill. Fill in `<>` placehold
 name: <skill-name>
 description: Use when the user enters /<skill-name> ... [add 8-15 natural-language trigger phrases the user would actually say, covering both slash commands and conversational requests]
 allowed-tools: Bash, Read, Write, Grep
-model: sonnet
+model: sonnet  <!-- default balanced; see "model" section below for cross-platform guidance -->
 ---
 
 # <skill-name>
@@ -73,13 +73,18 @@ Follow the principle of least privilege:
 
 ### model
 
-Match task difficulty to model capability:
+Choose by **task reasoning demand**, not a fixed model name. Write the value that your target platform understands.
 
-| model | Best For | Example Tasks |
-|-------|----------|---------------|
-| `opus` | Heavy reasoning, code analysis, complex chains | Reverse engineering, architecture design, multi-step debug |
-| `sonnet` | Structured output, balanced speed/quality | Report generation, doc writing, code review |
-| `haiku` | Simple lookups, fast classifiers | Keyword check, file existence, format validation |
+| Need | Capability Tier | Claude | Codex (example) | Other Platforms |
+|------|----------------|--------|-----------------|-----------------|
+| Heavy reasoning, multi-step analysis, code generation | **Strong** | `opus` | `gpt-5` | Platform equivalent |
+| Structured output, reports, docs, balanced speed/quality | **Balanced** | `sonnet` | `o4-mini` / `gpt-5` | Platform equivalent |
+| Simple lookup, keyword check, classification | **Fast** | `haiku` | `o4-mini` | Platform equivalent |
+
+Rules:
+- **Prefer non-binding capability labels** (`reasoning`/`balanced`/`fast`) if the platform supports them — this keeps the skill portable.
+- **Use platform-native model names** (`opus`/`sonnet`/`haiku` for Claude, `gpt-5`/`o4-mini` for Codex) if the platform requires a specific value.
+- If unsure which tier to pick, default to **Balanced**.
 
 ## Body Section Rules
 
